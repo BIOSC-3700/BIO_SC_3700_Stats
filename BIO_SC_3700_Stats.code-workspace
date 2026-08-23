@@ -1,0 +1,19 @@
+{
+  "folders": [
+    {
+      "path": "."
+    }
+  ],
+  "settings": {
+    "cSpell.words": [
+      "bslib",
+      "readr",
+      "readxl",
+      "shinylive",
+      "stylesheet",
+      "tibble",
+      "ttest",
+      "Tukey's"
+    ]
+  }
+}

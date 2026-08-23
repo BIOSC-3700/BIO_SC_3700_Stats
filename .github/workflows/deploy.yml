@@ -1,0 +1,75 @@
+# Builds the shinylive (WebAssembly) export and publishes it to GitHub
+# Pages. shinylive resolves each dependency by reading the locally
+# installed package's DESCRIPTION, so the app's packages have to be
+# installed on the runner even though nothing here actually runs the
+# app — that is why this job installs more than just shinylive.
+name: Deploy app to GitHub Pages
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: r-lib/actions/setup-r@v2
+        with:
+          r-version: release
+          use-public-rspm: true
+
+      - name: Cache R library
+        uses: actions/cache@v4
+        with:
+          path: ${{ env.R_LIBS_USER }}
+          key: r-lib-${{ runner.os }}-${{ hashFiles('.github/workflows/deploy.yml') }}
+          restore-keys: r-lib-${{ runner.os }}-
+
+      # The wasm runtime and package binaries are large and change only
+      # when shinylive itself does, so they are worth caching.
+      - name: Cache shinylive web assets
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/shinylive
+          key: shinylive-assets-${{ runner.os }}-${{ hashFiles('app/app.R') }}
+          restore-keys: shinylive-assets-${{ runner.os }}-
+
+      - name: Install R packages
+        shell: Rscript {0}
+        run: |
+          pkgs <- c("shinylive", "shiny", "bslib", "ggplot2", "dplyr",
+                    "tibble", "readr", "readxl", "DT", "glue", "fs")
+          missing <- pkgs[!pkgs %in% rownames(installed.packages())]
+          if (length(missing) > 0) install.packages(missing)
+
+      - name: Export static site
+        shell: Rscript {0}
+        run: |
+          shinylive::export("app", "site")
+          stopifnot(file.exists("site/index.html"))
+
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: site
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4

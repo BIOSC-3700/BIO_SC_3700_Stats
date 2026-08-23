@@ -1,0 +1,254 @@
+/* Colors mirror app/R/format.R's `pal` so the page and the figures
+   read as one thing. Status colors always appear with a word, never
+   as color alone. */
+:root {
+  --bio-accent: #2a78d6;
+  --bio-muted: #898781;
+  --bio-critical: #d03b3b;
+  --bio-warning: #fab219;
+  --bio-good: #0ca30c;
+  --bio-ink: #0b0b0b;
+  --bio-ink2: #52514e;
+  --bio-grid: #e1e0d9;
+  --bs-primary: #2a78d6;
+}
+
+body {
+  color: var(--bio-ink);
+}
+
+.navbar {
+  border-bottom: 1px solid var(--bio-grid);
+}
+
+/* ---- sidebar hints ---- */
+.hint {
+  font-size: 0.85rem;
+  color: var(--bio-ink2);
+  margin-top: -0.35rem;
+  margin-bottom: 0.9rem;
+  line-height: 1.35;
+}
+
+.btn-row {
+  display: flex;
+  gap: 0.5rem;
+  margin-bottom: 0.5rem;
+}
+
+details > summary {
+  cursor: pointer;
+  font-weight: 600;
+  color: var(--bio-ink2);
+  margin-bottom: 0.6rem;
+}
+
+/* ---- alerts on the data tab ---- */
+.alert-box {
+  border-radius: 6px;
+  padding: 0.6rem 0.85rem;
+  margin-bottom: 0.6rem;
+  font-size: 0.92rem;
+  border-left: 4px solid var(--bio-muted);
+  background: #f7f7f5;
+}
+
+.alert-ok {
+  border-left-color: var(--bio-good);
+  background: #f2faf2;
+}
+
+.alert-warn {
+  border-left-color: var(--bio-warning);
+  background: #fdf8ec;
+}
+
+.alert-fail {
+  border-left-color: var(--bio-critical);
+  background: #fdf2f2;
+}
+
+.alert-info {
+  border-left-color: var(--bio-accent);
+  background: #f2f7fd;
+}
+
+/* ---- the headline result ---- */
+.verdict {
+  border-radius: 8px;
+  padding: 0.9rem 1.1rem;
+  margin-bottom: 1rem;
+  border: 1px solid var(--bio-grid);
+  border-left-width: 5px;
+  background: #fcfcfb;
+}
+
+.verdict-sig {
+  border-left-color: var(--bio-accent);
+}
+
+.verdict-ns {
+  border-left-color: var(--bio-muted);
+}
+
+.verdict-none {
+  border-left-color: var(--bio-critical);
+}
+
+.verdict-headline {
+  font-size: 1.05rem;
+  font-weight: 600;
+  margin-bottom: 0.35rem;
+  color: var(--bio-ink);
+}
+
+.verdict-detail {
+  margin-bottom: 0;
+  color: var(--bio-ink2);
+  font-size: 0.92rem;
+}
+
+/* ---- assumption checks ---- */
+.check-block {
+  padding: 0.55rem 0 0.7rem 0;
+  border-bottom: 1px solid var(--bio-grid);
+}
+
+.check-block:last-child {
+  border-bottom: none;
+}
+
+.check-head {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  margin-bottom: 0.25rem;
+}
+
+.check-title {
+  font-weight: 600;
+  color: var(--bio-ink);
+}
+
+.check-detail {
+  margin: 0;
+  color: var(--bio-ink2);
+  font-size: 0.9rem;
+  line-height: 1.45;
+}
+
+.badge-check {
+  display: inline-block;
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+  padding: 0.16rem 0.5rem;
+  border-radius: 999px;
+  white-space: nowrap;
+  color: #ffffff;
+}
+
+.badge-ok {
+  background: var(--bio-good);
+}
+
+.badge-warn {
+  background: var(--bio-warning);
+  color: var(--bio-ink);
+}
+
+.badge-fail {
+  background: var(--bio-critical);
+}
+
+.badge-info {
+  background: var(--bio-muted);
+}
+
+/* ---- results table ---- */
+.kv-table {
+  width: 100%;
+  font-size: 0.93rem;
+  margin-bottom: 1rem;
+}
+
+.kv-table th {
+  text-align: left;
+  font-weight: 500;
+  color: var(--bio-ink2);
+  padding: 0.32rem 0.6rem 0.32rem 0;
+  border-bottom: 1px solid var(--bio-grid);
+  width: 55%;
+}
+
+.kv-table td {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+  font-weight: 600;
+  padding: 0.32rem 0;
+  border-bottom: 1px solid var(--bio-grid);
+}
+
+table.table {
+  font-size: 0.9rem;
+  margin-bottom: 0;
+}
+
+/* Result tables are wider than a narrow card on small screens; let
+   them scroll sideways rather than clip the last columns. */
+.table-scroll {
+  overflow-x: auto;
+  width: 100%;
+}
+
+/* No nowrap here: a long group name should wrap inside its cell rather
+   than push the last column out of the scroll box. */
+.table-scroll table {
+  width: 100%;
+}
+
+h6 {
+  margin-top: 1rem;
+  color: var(--bio-ink2);
+  font-weight: 700;
+}
+
+/* ---- empty states ---- */
+.empty-state {
+  border: 1px dashed var(--bio-grid);
+  border-radius: 8px;
+  padding: 2rem;
+  text-align: center;
+  color: var(--bio-ink2);
+  background: #fcfcfb;
+}
+
+.empty-state-warn {
+  border-color: var(--bio-warning);
+  text-align: left;
+  background: #fdf8ec;
+}
+
+.empty-state h4 {
+  color: var(--bio-ink);
+  margin-bottom: 0.5rem;
+}
+
+.dl-row {
+  margin-top: 0.55rem;
+  text-align: right;
+}
+
+/* ---- help ---- */
+.help-body {
+  max-width: 46rem;
+  margin: 1.5rem auto;
+  line-height: 1.6;
+}
+
+.help-body h3 {
+  font-size: 1.15rem;
+  margin-top: 1.6rem;
+  margin-bottom: 0.6rem;
+}
