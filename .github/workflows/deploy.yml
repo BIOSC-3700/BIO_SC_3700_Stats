@@ -54,11 +54,20 @@ jobs:
           missing <- pkgs[!pkgs %in% rownames(installed.packages())]
           if (length(missing) > 0) install.packages(missing)
 
+      # template_params sets the browser tab title; without it the
+      # exported page is titled "Shiny App".
       - name: Export static site
         shell: Rscript {0}
         run: |
-          shinylive::export("app", "site")
+          shinylive::export(
+            "app", "site",
+            template_params = list(title = "BIO_SC 3700 Statistics")
+          )
           stopifnot(file.exists("site/index.html"))
+          stopifnot(any(grepl(
+            "<title>BIO_SC 3700 Statistics</title>",
+            readLines("site/index.html")
+          )))
 
       - uses: actions/upload-pages-artifact@v3
         with:

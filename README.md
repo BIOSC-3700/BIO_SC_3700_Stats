@@ -34,8 +34,14 @@ main effects are significant.
 
 ```r
 shiny::runApp("app")                 # normal Shiny, fast to iterate on
-shinylive::export("app", "site")     # build the static WebAssembly site
-httpuv::runStaticServer("site")      # preview that build
+httpuv::runStaticServer("site")      # preview the built site
+
+# Build the static WebAssembly site. template_params sets the browser
+# tab title; without it the page is titled "Shiny App".
+shinylive::export(
+  "app", "site",
+  template_params = list(title = "BIO_SC 3700 Statistics")
+)
 ```
 
 Test in plain R first, then confirm in the wasm build before pushing —
@@ -43,11 +49,20 @@ the two differ in package availability and file-system behavior.
 
 ## Deploying
 
-Pushing to `main` triggers `.github/workflows/deploy.yml`, which runs
-the shinylive export and publishes `site/` to GitHub Pages. Enable
-Pages for the repository once, with **Source: GitHub Actions**.
+The app is live at
+**<https://kmiddleton.github.io/BIO_SC_3700_Stats/>**
 
-`site/` is generated and is not committed.
+Pushing to `main` triggers `.github/workflows/deploy.yml`, which runs
+the shinylive export and publishes `site/` to GitHub Pages. No manual
+step is needed. `site/` is generated and is not committed.
+
+Setting this up on a fork takes two things: the repository must be
+public (Pages publishes from private repos only on a paid plan), and
+Pages must be switched on once with **Settings → Pages → Source:
+GitHub Actions**, which is also
+`gh api -X POST repos/OWNER/REPO/pages -f build_type=workflow`. Enable
+it before the first push, or the build will succeed and the deploy step
+will fail with "Pages site not found".
 
 ## Layout
 
