@@ -30,7 +30,8 @@ mod_ttest1_ui <- function(id) {
   return(out)
 }
 
-mod_ttest1_server <- function(id, data) {
+mod_ttest1_server <- function(id, data,
+                              show_plots = TRUE) {
   shiny::moduleServer(id, function(input, output, session) {
     ns <- session$ns
 
@@ -262,18 +263,22 @@ mod_ttest1_server <- function(id, data) {
       if (length(probs) > 0) {
         return(cannot_run_panel(probs))
       }
+      plot_card <- if (show_plots) {
+        bslib::card(
+          bslib::card_header("Plot"),
+          plot_panel(ns, height = "300px")
+        )
+      }
+      widths <- if (show_plots) c(5, 7) else 12
       return(shiny::tagList(
         shiny::uiOutput(ns("verdict")),
         bslib::layout_columns(
-          col_widths = c(5, 7),
+          col_widths = widths,
           bslib::card(
             bslib::card_header("Result"),
             shiny::uiOutput(ns("stats"))
           ),
-          bslib::card(
-            bslib::card_header("Plot"),
-            plot_panel(ns, height = "300px")
-          )
+          plot_card
         ),
         bslib::accordion(
           open = TRUE,

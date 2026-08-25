@@ -22,7 +22,8 @@ mod_anova_ui <- function(id) {
   return(out)
 }
 
-mod_anova_server <- function(id, data) {
+mod_anova_server <- function(id, data,
+                             show_plots = TRUE) {
   shiny::moduleServer(id, function(input, output, session) {
     ns <- session$ns
 
@@ -275,26 +276,46 @@ mod_anova_server <- function(id, data) {
         return(cannot_run_panel(probs))
       }
       tukey_section <- if (isTRUE(input$tukey)) {
-        bslib::card(
-          bslib::card_header("Tukey's HSD — which pairs differ?"),
+        tukey_content <- if (show_plots) {
           bslib::layout_columns(
             col_widths = c(6, 6),
-            shiny::div(class = "table-scroll",
-                       shiny::tableOutput(ns("tukey_table"))),
+            shiny::div(
+              class = "table-scroll",
+              shiny::tableOutput(ns("tukey_table"))
+            ),
             plot_panel(
-              ns, height = "360px", plot_id = "tukey_plot",
+              ns, height = "360px",
+              plot_id = "tukey_plot",
               dl_id = "download_tukey"
             )
           )
+        } else {
+          shiny::div(
+            class = "table-scroll",
+            shiny::tableOutput(ns("tukey_table"))
+          )
+        }
+        bslib::card(
+          bslib::card_header(
+            "Tukey's HSD \u2014 which pairs differ?"
+          ),
+          tukey_content
         )
       } else {
         NULL
       }
+      plot_card <- if (show_plots) {
+        bslib::card(
+          bslib::card_header("Plot"),
+          plot_panel(ns)
+        )
+      }
+      widths <- if (show_plots) c(6, 6) else 12
       return(shiny::tagList(
         shiny::uiOutput(ns("verdict")),
         shiny::uiOutput(ns("welch")),
         bslib::layout_columns(
-          col_widths = c(6, 6),
+          col_widths = widths,
           bslib::card(
             bslib::card_header("ANOVA table"),
             shiny::div(class = "table-scroll",
@@ -303,10 +324,7 @@ mod_anova_server <- function(id, data) {
             shiny::div(class = "table-scroll",
                        shiny::tableOutput(ns("summary")))
           ),
-          bslib::card(
-            bslib::card_header("Plot"),
-            plot_panel(ns)
-          )
+          plot_card
         ),
         tukey_section,
         bslib::accordion(

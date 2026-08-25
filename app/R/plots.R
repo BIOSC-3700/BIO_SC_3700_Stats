@@ -397,3 +397,96 @@ plot_grouped_boxes <- function(cells, style = "box", xlab = "Factor A",
     ggplot2::theme(legend.position = "top")
   return(p)
 }
+
+# ---- standalone plot tab ------------------------------------------------
+
+# Bar plot of group means with SE error bars.
+plot_bar <- function(data, title = NULL,
+                     xlab = "Group", ylab = "Value") {
+  data <- dplyr::filter(data, !is.na(.data$value))
+  data$group <- droplevels(data$group)
+  stats <- data |>
+    dplyr::group_by(.data$group) |>
+    dplyr::summarize(
+      mean = mean(.data$value),
+      se = se_mean(.data$value),
+      .groups = "drop"
+    )
+  p <- ggplot2::ggplot(
+    stats,
+    ggplot2::aes(x = .data$group, y = .data$mean)
+  ) +
+    ggplot2::geom_col(
+      fill = pal$accent, alpha = 0.7, width = 0.6
+    ) +
+    ggplot2::geom_errorbar(
+      ggplot2::aes(
+        ymin = .data$mean - .data$se,
+        ymax = .data$mean + .data$se
+      ),
+      width = 0.15, linewidth = 0.6, color = pal$ink
+    ) +
+    ggplot2::labs(
+      x = xlab, y = ylab, title = title,
+      caption = paste(
+        "Bars show group means;",
+        "error bars are \u00b1 1 SE."
+      )
+    ) +
+    theme_bio3700()
+  return(p)
+}
+
+# Histogram of a numeric vector.
+plot_histogram <- function(values, bins = 20,
+                           title = NULL,
+                           xlab = "Value") {
+  values <- values[!is.na(values)]
+  data <- tibble::tibble(value = values)
+  p <- ggplot2::ggplot(
+    data, ggplot2::aes(x = .data$value)
+  ) +
+    ggplot2::geom_histogram(
+      bins = bins, fill = pal$accent, alpha = 0.7,
+      color = pal$surface, linewidth = 0.3
+    ) +
+    ggplot2::labs(
+      x = xlab, y = "Count", title = title
+    ) +
+    theme_bio3700() +
+    ggplot2::theme(
+      panel.grid.major.x = ggplot2::element_line(
+        color = pal$grid, linewidth = 0.4
+      )
+    )
+  return(p)
+}
+
+# XY scatterplot from two columns of a raw data frame.
+plot_scatter <- function(data, x_col, y_col,
+                         title = NULL, xlab = NULL,
+                         ylab = NULL) {
+  keep <- !is.na(data[[x_col]]) & !is.na(data[[y_col]])
+  data <- data[keep, ]
+  p <- ggplot2::ggplot(
+    data,
+    ggplot2::aes(
+      x = .data[[x_col]], y = .data[[y_col]]
+    )
+  ) +
+    ggplot2::geom_point(
+      color = pal$accent, size = 2.4, alpha = 0.75
+    ) +
+    ggplot2::labs(
+      x = xlab %||% x_col,
+      y = ylab %||% y_col,
+      title = title
+    ) +
+    theme_bio3700() +
+    ggplot2::theme(
+      panel.grid.major.x = ggplot2::element_line(
+        color = pal$grid, linewidth = 0.4
+      )
+    )
+  return(p)
+}

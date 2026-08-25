@@ -23,6 +23,10 @@ library(fs)
 # slow under wasm, so all custom styling lives in www/styles.css.
 app_theme <- bs_theme(version = 5)
 
+# Set to FALSE to hide the automatic plots on the statistics
+# tabs. The standalone Plot tab is unaffected.
+show_stat_plots <- TRUE
+
 help_panel <- function() {
   out <- div(
     class = "help-body",
@@ -122,16 +126,18 @@ ui <- page_navbar(
   nav_panel("One-sample t-test", mod_ttest1_ui("t1")),
   nav_panel("One-way ANOVA", mod_anova_ui("anova")),
   nav_panel("Two-way ANOVA", mod_anova2_ui("anova2")),
+  nav_panel("Plot", mod_plot_ui("plot")),
   nav_spacer(),
   nav_panel("Help", help_panel())
 )
 
 server <- function(input, output, session) {
   data <- mod_data_server("data")
-  mod_ttest2_server("t2", data)
-  mod_ttest1_server("t1", data)
-  mod_anova_server("anova", data)
-  mod_anova2_server("anova2", data)
+  mod_ttest2_server("t2", data, show_stat_plots)
+  mod_ttest1_server("t1", data, show_stat_plots)
+  mod_anova_server("anova", data, show_stat_plots)
+  mod_anova2_server("anova2", data, show_stat_plots)
+  mod_plot_server("plot", data)
 }
 
 shinyApp(ui, server)

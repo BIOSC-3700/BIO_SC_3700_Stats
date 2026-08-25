@@ -39,7 +39,8 @@ mod_anova2_ui <- function(id) {
   return(out)
 }
 
-mod_anova2_server <- function(id, data) {
+mod_anova2_server <- function(id, data,
+                              show_plots = TRUE) {
   shiny::moduleServer(id, function(input, output, session) {
     ns <- session$ns
 
@@ -707,9 +708,7 @@ mod_anova2_server <- function(id, data) {
         return(NULL)
       }
       if (interaction_sig()) {
-        return(bslib::card(
-          bslib::card_header("Post-hoc: which combinations differ?"),
-          shiny::uiOutput(ns("posthoc_intro")),
+        tukey_content <- if (show_plots) {
           bslib::layout_columns(
             col_widths = c(6, 6),
             shiny::div(
@@ -717,10 +716,23 @@ mod_anova2_server <- function(id, data) {
               shiny::tableOutput(ns("tukey_cells_table"))
             ),
             plot_panel(
-              ns, height = "360px", plot_id = "tukey_cells_plot",
+              ns, height = "360px",
+              plot_id = "tukey_cells_plot",
               dl_id = "download_tukey"
             )
+          )
+        } else {
+          shiny::div(
+            class = "table-scroll",
+            shiny::tableOutput(ns("tukey_cells_table"))
+          )
+        }
+        return(bslib::card(
+          bslib::card_header(
+            "Post-hoc: which combinations differ?"
           ),
+          shiny::uiOutput(ns("posthoc_intro")),
+          tukey_content,
           shiny::tags$h6("Simple effects"),
           shiny::div(
             class = "table-scroll",
@@ -744,11 +756,34 @@ mod_anova2_server <- function(id, data) {
         return(cannot_run_panel(probs))
       }
       shiny::req(ready())
+      interaction_card <- if (show_plots) {
+        bslib::card(
+          bslib::card_header("Interaction plot"),
+          shiny::uiOutput(ns("plot_note")),
+          plot_panel(ns, height = "380px"),
+          shiny::p(class = "hint", paste(
+            "Parallel lines mean no interaction.",
+            "Lines that converge, diverge, or cross",
+            "are what an interaction looks like."
+          ))
+        )
+      }
+      group_card <- if (show_plots) {
+        bslib::card(
+          bslib::card_header("Group comparison"),
+          plot_panel(
+            ns, height = "420px",
+            plot_id = "box_plot",
+            dl_id = "download_box"
+          )
+        )
+      }
+      widths <- if (show_plots) c(6, 6) else 12
       return(shiny::tagList(
         shiny::uiOutput(ns("verdict")),
         shiny::uiOutput(ns("balance")),
         bslib::layout_columns(
-          col_widths = c(6, 6),
+          col_widths = widths,
           bslib::card(
             bslib::card_header("ANOVA table"),
             shiny::div(
@@ -766,30 +801,18 @@ mod_anova2_server <- function(id, data) {
               shiny::tableOutput(ns("counts_table"))
             )
           ),
-          bslib::card(
-            bslib::card_header("Interaction plot"),
-            shiny::uiOutput(ns("plot_note")),
-            plot_panel(ns, height = "380px"),
-            shiny::p(class = "hint", paste(
-              "Parallel lines mean no interaction. Lines that converge,",
-              "diverge, or cross are what an interaction looks like."
-            ))
-          )
+          interaction_card
         ),
-        bslib::card(
-          bslib::card_header("Group comparison"),
-          plot_panel(
-            ns, height = "420px", plot_id = "box_plot",
-            dl_id = "download_box"
-          )
-        ),
+        group_card,
         posthoc_section(),
         bslib::accordion(
           open = TRUE,
           bslib::accordion_panel(
             "Assumptions — check these before trusting the p-value",
             shiny::uiOutput(ns("assumptions")),
-            shiny::tags$h6("QQ plot of the model residuals"),
+            shiny::tags$h6(
+              "QQ plot of the model residuals"
+            ),
             shiny::plotOutput(ns("qq"), height = "260px")
           )
         )
