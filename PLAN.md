@@ -65,8 +65,14 @@ Three options, presented as a radio choice:
 - **Paste from a spreadsheet** — a `textAreaInput` that accepts a
   tab-delimited block copied out of Excel or Google Sheets. This is the
   path most students will actually use for small datasets.
-- **Type it in** — an editable table (start with 2 columns × 10 rows,
-  buttons to add rows/columns) for data that only exists on paper.
+- **Use an example dataset** — one click to a working dataset, both
+  for demonstration and so a student who has broken their own file can
+  still follow along in class.
+
+A fourth option, an editable table for typing data in by hand, was
+built and then removed: for data that only exists on paper, retyping it
+into a spreadsheet and pasting is fewer steps and leaves the student
+with a file they still have afterwards.
 
 ### Layout selection
 
@@ -282,7 +288,7 @@ Keep this list short; every entry costs load time.
 | `dplyr` | group summaries | |
 | `readr` | CSV/TSV import | kept |
 | `readxl` | Excel import | confirmed available in the webR repo |
-| `DT` | preview and editable table | kept; 1.7 MB |
+| `DT` | preview table | kept; 1.7 MB |
 
 Everything statistical comes from base `stats`: `t.test()`, `aov()`,
 `TukeyHSD()`, `oneway.test()`, `shapiro.test()`. No modeling packages.
@@ -375,8 +381,8 @@ spellings (`summarize`, `color`). Do not name any data frame `df`.
    with validation and the assumptions panel.
 3. ~~**One-sample t-test**~~ — including the paired-difference mode.
 4. ~~**ANOVA and Tukey**~~ — with the Tukey CI plot and Welch fallback.
-5. ~~**Input methods**~~ — paste-from-spreadsheet and the editable
-   table.
+5. ~~**Input methods**~~ — paste-from-spreadsheet (the editable table
+   was built here and later removed).
 6. ~~**Polish**~~ — plain-language summaries, plot download, example
    datasets, Help tab.
 

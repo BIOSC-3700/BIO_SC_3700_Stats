@@ -19,12 +19,6 @@ example_files <- c(
     "factorial_growth.csv"
 )
 
-blank_manual_table <- function(n = 12) {
-  return(tibble::tibble(
-    group = rep(c("Group A", "Group B"), each = n / 2),
-    value = rep(NA_real_, n)
-  ))
-}
 
 mod_data_ui <- function(id) {
   ns <- shiny::NS(id)
@@ -36,7 +30,6 @@ mod_data_ui <- function(id) {
         choices = c(
           "Upload a file" = "file",
           "Paste from a spreadsheet" = "paste",
-          "Type it in" = "manual",
           "Use an example dataset" = "example"
         ),
         selected = "example"
@@ -66,21 +59,6 @@ mod_data_ui <- function(id) {
         )
       ),
       shiny::conditionalPanel(
-        "input.source == 'manual'", ns = ns,
-        shiny::p(
-          class = "hint",
-          "Click any cell in the table to edit it. Type the group name ",
-          "in the first column and the measurement in the second."
-        ),
-        shiny::div(
-          class = "btn-row",
-          shiny::actionButton(ns("add_rows"), "Add 5 rows",
-                              class = "btn-sm btn-outline-secondary"),
-          shiny::actionButton(ns("reset_manual"), "Clear",
-                              class = "btn-sm btn-outline-secondary")
-        )
-      ),
-      shiny::conditionalPanel(
         "input.source == 'example'", ns = ns,
         shiny::selectInput(
           ns("example"), "Example dataset",
@@ -91,13 +69,6 @@ mod_data_ui <- function(id) {
       shiny::uiOutput(ns("layout_ui"))
     ),
     shiny::uiOutput(ns("alerts")),
-    shiny::conditionalPanel(
-      "input.source == 'manual'", ns = ns,
-      bslib::card(
-        bslib::card_header("Type your data here"),
-        DT::DTOutput(ns("manual_table"))
-      )
-    ),
     bslib::layout_columns(
       col_widths = c(6, 6),
       bslib::card(
@@ -116,46 +87,6 @@ mod_data_ui <- function(id) {
 mod_data_server <- function(id) {
   shiny::moduleServer(id, function(input, output, session) {
     ns <- session$ns
-
-    manual_data <- shiny::reactiveVal(blank_manual_table())
-    manual_version <- shiny::reactiveVal(0)
-
-    # ---- manual entry -------------------------------------------------
-    output$manual_table <- DT::renderDT(
-      {
-        manual_version()
-        DT::datatable(
-          shiny::isolate(manual_data()),
-          rownames = FALSE, editable = TRUE,
-          options = list(dom = "tp", pageLength = 12, ordering = FALSE),
-          colnames = c("Group", "Value")
-        )
-      },
-      server = TRUE
-    )
-
-    shiny::observeEvent(input$manual_table_cell_edit, {
-      edited <- DT::editData(
-        manual_data(), input$manual_table_cell_edit,
-        rownames = FALSE
-      )
-      edited$value <- suppressWarnings(as.numeric(edited$value))
-      manual_data(tibble::as_tibble(edited))
-    })
-
-    shiny::observeEvent(input$add_rows, {
-      current <- manual_data()
-      extra <- tibble::tibble(
-        group = rep(NA_character_, 5), value = rep(NA_real_, 5)
-      )
-      manual_data(dplyr::bind_rows(current, extra))
-      manual_version(manual_version() + 1)
-    })
-
-    shiny::observeEvent(input$reset_manual, {
-      manual_data(blank_manual_table())
-      manual_version(manual_version() + 1)
-    })
 
     # ---- file upload --------------------------------------------------
     file_ext <- shiny::reactive({
@@ -248,7 +179,6 @@ mod_data_server <- function(id) {
         input$source,
         file = file_result(),
         paste = paste_result(),
-        manual = list(data = manual_data(), error = NULL),
         example = example_result()
       )
     })

@@ -30,12 +30,6 @@ body {
   line-height: 1.35;
 }
 
-.btn-row {
-  display: flex;
-  gap: 0.5rem;
-  margin-bottom: 0.5rem;
-}
-
 details > summary {
   cursor: pointer;
   font-weight: 600;

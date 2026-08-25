@@ -30,7 +30,7 @@ help_panel <- function() {
     tags$ol(
       tags$li(paste(
         "On the Data tab, load your measurements — upload a file, paste",
-        "from a spreadsheet, type them in, or start from an example."
+        "from a spreadsheet, or start from an example."
       )),
       tags$li(paste(
         "Tell the app how your data is arranged. Long format means one",

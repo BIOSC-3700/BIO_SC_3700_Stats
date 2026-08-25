@@ -10,7 +10,7 @@ during a lab section, and nothing for students to install.
 
 | Tab | What it does |
 | --- | --- |
-| **Data** | Upload a CSV/Excel file, paste from a spreadsheet, type data in, or load an example. Declares long vs. wide layout and validates the result. |
+| **Data** | Upload a CSV/Excel file, paste from a spreadsheet, or load an example. Declares long vs. wide layout and validates the result. |
 | **Two-sample t-test** | Welch by default, with pooled-variance and paired options. |
 | **One-sample t-test** | One group against a fixed μ₀, or the difference between two paired columns. |
 | **One-way ANOVA** | One-way ANOVA with optional Tukey HSD, plus Welch's ANOVA when variances are unequal. |
