@@ -11,12 +11,16 @@
 # often, so the app states its inference and lets them override it.
 
 example_files <- c(
-  "Plant growth — 3 treatments, long format" = "plant_growth.csv",
-  "Fish length — 2 lakes, long format" = "fish_length.csv",
-  "Enzyme activity — 3 buffers, wide format" = "enzyme_wide.csv",
-  "Blood pressure — paired before/after" = "bp_paired.csv",
-  "Plant biomass — genotype × drought, factorial" =
-    "factorial_growth.csv"
+  "Horned lizard horn length — 2 groups" =
+    "horned_lizards.csv",
+  "Kenya finch body mass — 3 species" =
+    "kenya_finches.csv",
+  "Blackbird antibodies — paired before/after" =
+    "blackbird_antibodies.csv",
+  "Lion nose coloration — age vs. proportion black" =
+    "lion_noses.csv",
+  "Intertidal algae — height × herbivores, factorial" =
+    "intertidal_algae.csv"
 )
 
 
@@ -78,6 +82,58 @@ mod_data_ui <- function(id) {
       bslib::card(
         bslib::card_header("Summary by group"),
         shiny::div(class = "table-scroll", shiny::tableOutput(ns("summary")))
+      )
+    ),
+    shiny::conditionalPanel(
+      "input.source == 'example'", ns = ns,
+      shiny::hr(),
+      shiny::div(
+        class = "references",
+        shiny::h6("Example dataset references"),
+        shiny::tags$ul(
+          shiny::tags$li(
+            shiny::strong("Horned lizards:"),
+            "Young, K. V., E. D. Brodie Jr., and E. D. Brodie III.",
+            "2004. How the horned lizard got its horns.",
+            shiny::em("Science"), "304: 65."
+          ),
+          shiny::tags$li(
+            shiny::strong("Kenya finches:"),
+            "Schluter, D. 1988. The evolution of finch",
+            "communities on islands and continents: Kenya",
+            "vs. Gal\u00e1pagos.",
+            shiny::em("Ecological Monographs"), "58: 229\u2013249."
+          ),
+          shiny::tags$li(
+            shiny::strong("Blackbird antibodies:"),
+            "Hasselquist, D., J. A. Marsh, P. W. Sherman,",
+            "and J. C. Wingfield. 1999. Is avian humoral",
+            "immunocompetence suppressed by testosterone?",
+            shiny::em("Behavioral Ecology and Sociobiology"),
+            "45: 167\u2013175."
+          ),
+          shiny::tags$li(
+            shiny::strong("Lion noses:"),
+            "Whitman, K., A. M. Starfield, H. S. Quadling,",
+            "and C. Packer. 2004. Sustainable trophy hunting",
+            "of African lions.",
+            shiny::em("Nature"), "428: 175\u2013178."
+          ),
+          shiny::tags$li(
+            shiny::strong("Intertidal algae:"),
+            "Harley, C. D. G. 2003. Abiotic stress and",
+            "herbivory interact to set range limits across a",
+            "two-dimensional stress gradient.",
+            shiny::em("Ecology"), "84: 1477\u20131488."
+          )
+        ),
+        shiny::p(
+          class = "hint",
+          "Data from Whitlock & Schluter,",
+          shiny::em("The Analysis of Biological Data."),
+          "R package:",
+          shiny::tags$code("abdData"), "."
+        )
       )
     )
   )

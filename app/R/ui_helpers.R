@@ -133,3 +133,18 @@ plot_download_handler <- function(plot_fn, name) {
   )
   return(out)
 }
+
+# Collapsible section showing the R code behind a result.
+code_accordion <- function(code_text) {
+  out <- bslib::accordion(
+    open = FALSE,
+    bslib::accordion_panel(
+      "R code",
+      shiny::tags$pre(
+        class = "r-code",
+        shiny::tags$code(code_text)
+      )
+    )
+  )
+  return(out)
+}

@@ -220,6 +220,101 @@ mod_plot_server <- function(id, data) {
       the_plot, "plot"
     )
 
+    code_text <- shiny::reactive({
+      shiny::req(length(problems()) == 0)
+      type <- input$type %||% "box"
+      labs <- data$labels()
+      title_arg <- input$plot_title
+      has_title <- !is.null(title_arg) && nzchar(title_arg)
+
+      if (type == "box") {
+        style <- input$box_style %||% "box"
+        geom <- switch(
+          style,
+          box = "geom_boxplot()",
+          violin = "geom_violin()",
+          points = "geom_point()"
+        )
+        code <- glue::glue(
+          "ggplot(my_data,\n",
+          "       aes(x = {labs$group},",
+          " y = {labs$value})) +\n",
+          "  {geom}"
+        )
+        if (has_title) {
+          code <- glue::glue(
+            '{code} +\n',
+            '  labs(title = "{title_arg}")'
+          )
+        }
+        return(code)
+      }
+
+      if (type == "bar") {
+        code <- glue::glue(
+          "group_means <- my_data |>\n",
+          "  group_by({labs$group}) |>\n",
+          "  summarize(\n",
+          "    mean = mean({labs$value}),\n",
+          "    se = sd({labs$value}) /",
+          " sqrt(n())\n",
+          "  )\n\n",
+          "ggplot(group_means,\n",
+          "       aes(x = {labs$group},",
+          " y = mean)) +\n",
+          "  geom_col() +\n",
+          "  geom_errorbar(",
+          "aes(ymin = mean - se,\n",
+          "                  ",
+          "ymax = mean + se),\n",
+          "               width = 0.15)"
+        )
+        if (has_title) {
+          code <- glue::glue(
+            '{code} +\n',
+            '  labs(title = "{title_arg}")'
+          )
+        }
+        return(code)
+      }
+
+      if (type == "hist") {
+        hv <- hist_values()
+        bins <- input$bins %||% 20
+        code <- glue::glue(
+          "ggplot(my_data,",
+          " aes(x = {hv$label})) +\n",
+          "  geom_histogram(bins = {bins})"
+        )
+        if (has_title) {
+          code <- glue::glue(
+            '{code} +\n',
+            '  labs(title = "{title_arg}")'
+          )
+        }
+        return(code)
+      }
+
+      if (type == "scatter") {
+        x_col <- input$scatter_x
+        y_col <- input$scatter_y
+        shiny::req(x_col, y_col)
+        code <- glue::glue(
+          "ggplot(my_data,\n",
+          "       aes(x = {x_col},",
+          " y = {y_col})) +\n",
+          "  geom_point()"
+        )
+        if (has_title) {
+          code <- glue::glue(
+            '{code} +\n',
+            '  labs(title = "{title_arg}")'
+          )
+        }
+        return(code)
+      }
+    })
+
     output$body <- shiny::renderUI({
       if (is.null(data$raw())) {
         return(no_data_panel("a plot"))
@@ -228,9 +323,12 @@ mod_plot_server <- function(id, data) {
       if (length(probs) > 0) {
         return(cannot_run_panel(probs))
       }
-      return(bslib::card(
-        bslib::card_header("Plot"),
-        plot_panel(ns)
+      return(shiny::tagList(
+        bslib::card(
+          bslib::card_header("Plot"),
+          plot_panel(ns)
+        ),
+        code_accordion(code_text())
       ))
     })
   })

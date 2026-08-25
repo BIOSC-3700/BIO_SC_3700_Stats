@@ -262,10 +262,31 @@ mod_anova_server <- function(id, data,
       return(the_tukey_plot())
     })
 
-    output$download_plot <- plot_download_handler(the_plot, "anova")
+    output$download_plot <- plot_download_handler(
+      the_plot, "anova"
+    )
     output$download_tukey <- plot_download_handler(
       the_tukey_plot, "tukey-hsd"
     )
+
+    code_text <- shiny::reactive({
+      labs <- data$labels()
+      shiny::req(labs)
+      lines <- c(
+        glue::glue(
+          "model <- aov({labs$value} ~ {labs$group},",
+          " data = my_data)"
+        ),
+        "summary(model)"
+      )
+      if (isTRUE(input$tukey)) {
+        lines <- c(lines, glue::glue(
+          "TukeyHSD(model,",
+          " conf.level = {conf_level()})"
+        ))
+      }
+      return(paste(lines, collapse = "\n"))
+    })
 
     output$body <- shiny::renderUI({
       if (is.null(data$tidy())) {
@@ -335,7 +356,8 @@ mod_anova_server <- function(id, data,
             shiny::tags$h6("QQ plot for the normality check"),
             shiny::plotOutput(ns("qq"), height = "260px")
           )
-        )
+        ),
+        code_accordion(code_text())
       ))
     })
   })

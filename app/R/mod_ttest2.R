@@ -262,7 +262,31 @@ mod_ttest2_server <- function(id, data,
       return(the_plot())
     })
 
-    output$download_plot <- plot_download_handler(the_plot, "two-sample-t")
+    output$download_plot <- plot_download_handler(
+      the_plot, "two-sample-t"
+    )
+
+    code_text <- shiny::reactive({
+      labs <- data$labels()
+      shiny::req(labs)
+      if (isTRUE(input$paired)) {
+        return(glue::glue(
+          "t.test({labs$value} ~ {labs$group},\n",
+          "       data = my_data,\n",
+          "       paired = TRUE,\n",
+          '       alternative = "{input$alt}",\n',
+          "       conf.level = {conf_level()})"
+        ))
+      }
+      return(glue::glue(
+        "t.test({labs$value} ~ {labs$group},\n",
+        "       data = my_data,\n",
+        "       var.equal = ",
+        "{toupper(isTRUE(input$var_equal))},\n",
+        '       alternative = "{input$alt}",\n',
+        "       conf.level = {conf_level()})"
+      ))
+    })
 
     output$body <- shiny::renderUI({
       if (is.null(data$tidy())) {
@@ -300,7 +324,8 @@ mod_ttest2_server <- function(id, data,
             shiny::tags$h6("QQ plot for the normality check"),
             shiny::plotOutput(ns("qq"), height = "260px")
           )
-        )
+        ),
+        code_accordion(code_text())
       ))
     })
   })

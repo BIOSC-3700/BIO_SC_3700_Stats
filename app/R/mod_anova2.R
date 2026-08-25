@@ -545,10 +545,32 @@ mod_anova2_server <- function(id, data,
       ))
     })
 
-    output$download_plot <- plot_download_handler(the_plot, "interaction")
+    output$download_plot <- plot_download_handler(
+      the_plot, "interaction"
+    )
     output$download_box <- plot_download_handler(
       the_box_plot, "two-way-groups"
     )
+
+    code_text <- shiny::reactive({
+      cn <- col_names()
+      shiny::req(cn$response, cn$a, cn$b)
+      lines <- c(
+        glue::glue(
+          "model <- aov({cn$response} ~",
+          " {cn$a} * {cn$b},",
+          " data = my_data)"
+        ),
+        "summary(model)"
+      )
+      if (isTRUE(input$tukey)) {
+        lines <- c(lines, glue::glue(
+          "TukeyHSD(model,",
+          " conf.level = {conf_level()})"
+        ))
+      }
+      return(paste(lines, collapse = "\n"))
+    })
 
     # ---- post-hoc rendering ------------------------------------------------
     output$posthoc_intro <- shiny::renderUI({
@@ -815,7 +837,8 @@ mod_anova2_server <- function(id, data,
             ),
             shiny::plotOutput(ns("qq"), height = "260px")
           )
-        )
+        ),
+        code_accordion(code_text())
       ))
     })
   })

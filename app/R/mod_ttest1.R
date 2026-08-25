@@ -253,7 +253,32 @@ mod_ttest1_server <- function(id, data,
       return(the_plot())
     })
 
-    output$download_plot <- plot_download_handler(the_plot, "one-sample-t")
+    output$download_plot <- plot_download_handler(
+      the_plot, "one-sample-t"
+    )
+
+    code_text <- shiny::reactive({
+      alt <- input$alt %||% "two.sided"
+      cl <- conf_level()
+      if (identical(input$mode, "diff")) {
+        c1 <- input$col1
+        c2 <- input$col2
+        shiny::req(c1, c2)
+        return(glue::glue(
+          "t.test(my_data${c2} - my_data${c1},\n",
+          "       mu = {mu0()},\n",
+          '       alternative = "{alt}",\n',
+          "       conf.level = {cl})"
+        ))
+      }
+      sample <- sample_values()
+      return(glue::glue(
+        "t.test(x,\n",
+        "       mu = {mu0()},\n",
+        '       alternative = "{alt}",\n',
+        "       conf.level = {cl})"
+      ))
+    })
 
     output$body <- shiny::renderUI({
       if (is.null(data$raw())) {
@@ -288,7 +313,8 @@ mod_ttest1_server <- function(id, data,
             shiny::tags$h6("QQ plot for the normality check"),
             shiny::plotOutput(ns("qq"), height = "260px")
           )
-        )
+        ),
+        code_accordion(code_text())
       ))
     })
   })

@@ -8,30 +8,33 @@ ok <- function(label, cond) cat(sprintf("[%s] %s\n", if (isTRUE(cond)) "PASS" el
 
 # ---- long-format example ------------------------------------------
 testServer(mod_data_server, {
-  session$setInputs(source = "example", example = "plant_growth.csv")
-  ok("long example loads", !is.null(raw()) && nrow(raw()) == 45)
+  session$setInputs(source = "example",
+                    example = "horned_lizards.csv")
+  ok("long example loads", !is.null(raw()) && nrow(raw()) == 184)
   ok("infers long layout", inferred_layout() == "long")
-  session$setInputs(layout = "long", value_col = "height_cm",
-                    group_col = "treatment")
+  session$setInputs(layout = "long", value_col = "horn.length",
+                    group_col = "group")
   td <- tidy()
-  ok("tidy has 45 rows", nrow(td) == 45)
-  ok("tidy has 3 groups", nlevels(td$group) == 3)
+  ok("tidy has 184 rows", nrow(td) == 184)
+  ok("tidy has 2 groups", nlevels(td$group) == 2)
   ok("value is numeric", is.numeric(td$value))
   ok("no problems flagged", length(tidy_result()$problems) == 0)
-  ok("labels carry column names", labels()$value == "height_cm")
+  ok("labels carry column names",
+     labels()$value == "horn.length")
 })
 
-# ---- wide-format example with NA padding --------------------------
+# ---- wide-format example -------------------------------------------
 testServer(mod_data_server, {
-  session$setInputs(source = "example", example = "enzyme_wide.csv")
+  session$setInputs(source = "example",
+                    example = "blackbird_antibodies.csv")
   ok("infers wide layout", inferred_layout() == "wide")
   session$setInputs(layout = "wide",
-                    wide_cols = c("pH_6.0", "pH_7.0", "pH_8.0"))
+                    wide_cols = c("before", "after"))
   td <- tidy()
-  ok("wide pivots to 37 usable rows", nrow(td) == 37)
-  ok("NA padding dropped & reported", tidy_result()$dropped == 5)
+  ok("wide pivots to 26 usable rows", nrow(td) == 26)
+  ok("no rows dropped", tidy_result()$dropped == 0)
   ok("group order follows columns",
-     identical(levels(td$group), c("pH_6.0", "pH_7.0", "pH_8.0")))
+     identical(levels(td$group), c("before", "after")))
 })
 
 # ---- paste path ----------------------------------------------------
@@ -42,7 +45,8 @@ testServer(mod_data_server, {
     paste_go = 1
   )
   ok("tab-delimited paste parses", nrow(raw()) == 4)
-  session$setInputs(layout = "long", value_col = "mass", group_col = "site")
+  session$setInputs(layout = "long", value_col = "mass",
+                    group_col = "site")
   ok("paste tidies to 4 rows", nrow(tidy()) == 4)
 })
 
@@ -53,16 +57,20 @@ testServer(mod_data_server, {
     paste_text = "g,v\nA,1\nA,2\nB,3 cm\nB,4",
     paste_go = 1
   )
-  session$setInputs(layout = "long", value_col = "v", group_col = "g")
+  session$setInputs(layout = "long", value_col = "v",
+                    group_col = "g")
   probs <- tidy_result()$problems
-  ok("bad number is reported", any(grepl("could not be read", probs)))
+  ok("bad number is reported",
+     any(grepl("could not be read", probs)))
   ok("bad row dropped", nrow(tidy()) == 3)
 })
 
 # ---- same column chosen twice --------------------------------------
 testServer(mod_data_server, {
-  session$setInputs(source = "example", example = "fish_length.csv",
-                    layout = "long", value_col = "lake", group_col = "lake")
+  session$setInputs(source = "example",
+                    example = "lion_noses.csv",
+                    layout = "long",
+                    value_col = "age", group_col = "age")
   ok("duplicate column choice caught",
      any(grepl("cannot be", tidy_result()$problems)))
 })
