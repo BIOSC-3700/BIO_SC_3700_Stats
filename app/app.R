@@ -122,11 +122,11 @@ ui <- page_navbar(
     tags$link(rel = "stylesheet", type = "text/css", href = "styles.css")
   ),
   nav_panel("Data", mod_data_ui("data")),
+  nav_panel("Plot", mod_plot_ui("plot")),
   nav_panel("Two-sample t-test", mod_ttest2_ui("t2")),
   nav_panel("One-sample t-test", mod_ttest1_ui("t1")),
   nav_panel("One-way ANOVA", mod_anova_ui("anova")),
   nav_panel("Two-way ANOVA", mod_anova2_ui("anova2")),
-  nav_panel("Plot", mod_plot_ui("plot")),
   nav_spacer(),
   nav_panel("Help", help_panel())
 )
