@@ -314,43 +314,39 @@ cell_means <- function(cells) {
 # diverge, or cross are the interaction made visible.
 plot_interaction <- function(cells, xlab = "Factor A", ylab = "Value",
                              color_lab = "Factor B", title = NULL) {
-  means <- cell_means(cells)
-  b_levels <- levels(means$b)
-  dodge <- ggplot2::position_dodge(width = 0.12)
-  last_x <- levels(means$a)[nlevels(means$a)]
-  ends <- dplyr::filter(means, .data$a == last_x)
+  b_levels <- levels(cells$b)
   p <- ggplot2::ggplot(
-    means,
+    cells,
     ggplot2::aes(
-      x = .data$a, y = .data$mean, color = .data$b,
-      shape = .data$b, group = .data$b
+      x = .data$a, y = .data$value,
+      color = .data$b, group = .data$b
     )
   ) +
-    ggplot2::geom_errorbar(
-      ggplot2::aes(
-        ymin = .data$mean - .data$se, ymax = .data$mean + .data$se
+    ggplot2::geom_point(
+      position = ggplot2::position_jitter(
+        width = 0.1, seed = 42
       ),
-      width = 0.08, linewidth = 0.6, position = dodge,
-      show.legend = FALSE
+      size = 3, alpha = 0.5
     ) +
-    ggplot2::geom_line(linewidth = 1, position = dodge) +
-    ggplot2::geom_point(size = 3.2, position = dodge) +
-    ggplot2::geom_text(
-      data = ends,
-      ggplot2::aes(label = .data$b),
-      position = dodge, hjust = -0.25, size = 4, show.legend = FALSE
+    ggplot2::stat_summary(
+      fun = mean, geom = "point", size = 6
     ) +
-    ggplot2::scale_color_manual(values = cat_colors(b_levels)) +
-    ggplot2::scale_shape_manual(values = cat_shapes(b_levels)) +
-    ggplot2::scale_x_discrete(
-      expand = ggplot2::expansion(mult = c(0.10, 0.28))
+    ggplot2::stat_summary(
+      fun = mean, geom = "line", linewidth = 1.5
+    ) +
+    ggplot2::stat_summary(
+      fun.data = ggplot2::mean_se, geom = "errorbar",
+      width = 0.08, linewidth = 0.6
+    ) +
+    ggplot2::scale_color_manual(
+      values = cat_colors(b_levels)
     ) +
     ggplot2::labs(
-      x = xlab, y = glue::glue("Mean {ylab} (± 1 SE)"), title = title,
-      color = color_lab, shape = color_lab
+      x = xlab, y = ylab, title = title,
+      color = color_lab
     ) +
     theme_bio3700() +
-    ggplot2::theme(legend.position = "top")
+    ggplot2::theme(legend.position = "bottom")
   return(p)
 }
 
