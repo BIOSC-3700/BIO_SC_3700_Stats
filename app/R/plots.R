@@ -437,6 +437,55 @@ plot_bar <- function(data, title = NULL,
   return(p)
 }
 
+# Grouped bar plot of means +/- SE for two factors.
+plot_grouped_bar <- function(cells, xlab = "Factor A",
+                             ylab = "Value",
+                             color_lab = "Factor B",
+                             title = NULL) {
+  cells <- dplyr::filter(cells, !is.na(.data$value))
+  b_levels <- levels(cells$b)
+  stats <- cell_means(cells)
+  dodge_width <- 0.7
+  p <- ggplot2::ggplot(
+    stats,
+    ggplot2::aes(
+      x = .data$a, y = .data$mean,
+      fill = .data$b
+    )
+  ) +
+    ggplot2::geom_col(
+      alpha = 0.7, width = 0.6,
+      position = ggplot2::position_dodge(
+        width = dodge_width
+      )
+    ) +
+    ggplot2::geom_errorbar(
+      ggplot2::aes(
+        ymin = .data$mean - .data$se,
+        ymax = .data$mean + .data$se
+      ),
+      width = 0.15, linewidth = 0.6,
+      color = pal$ink,
+      position = ggplot2::position_dodge(
+        width = dodge_width
+      )
+    ) +
+    ggplot2::scale_fill_manual(
+      values = cat_colors(b_levels)
+    ) +
+    ggplot2::labs(
+      x = xlab, y = ylab, title = title,
+      fill = color_lab,
+      caption = paste(
+        "Bars show group means;",
+        "error bars are \u00b1 1 SE."
+      )
+    ) +
+    theme_bio3700() +
+    ggplot2::theme(legend.position = "top")
+  return(p)
+}
+
 # Histogram of a numeric vector.
 plot_histogram <- function(values, bins = 20,
                            title = NULL,

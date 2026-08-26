@@ -1,8 +1,9 @@
 # Standalone Plot tab.
 #
-# Students can build bar plots, boxplots, histograms, and XY
-# scatterplots here, independent of any statistical test. The tab
-# is always visible regardless of the show_stat_plots flag.
+# Students can build bar plots, boxplots, interaction plots,
+# histograms, and XY scatterplots here, independent of any
+# statistical test. The tab is always visible regardless of
+# the show_stat_plots flag.
 
 mod_plot_ui <- function(id) {
   ns <- shiny::NS(id)
@@ -14,6 +15,7 @@ mod_plot_ui <- function(id) {
         choices = c(
           "Boxplot" = "box",
           "Bar plot (means \u00b1 SE)" = "bar",
+          "Interaction plot" = "interaction",
           "Histogram" = "hist",
           "XY scatterplot" = "scatter"
         ),
@@ -31,6 +33,15 @@ mod_plot_ui <- function(id) {
           ),
           selected = "box", inline = TRUE
         )
+      ),
+      shiny::conditionalPanel(
+        paste0(
+          "input.type == 'box' || ",
+          "input.type == 'bar' || ",
+          "input.type == 'interaction'"
+        ),
+        ns = ns,
+        shiny::uiOutput(ns("color_by_ui"))
       ),
       shiny::conditionalPanel(
         "input.type == 'hist'", ns = ns,
@@ -74,6 +85,148 @@ mod_plot_server <- function(id, data) {
       )])
     })
 
+    # ---- color-by / interaction selectors ----
+
+    output$color_by_ui <- shiny::renderUI({
+      raw <- data$raw()
+      shiny::req(raw)
+      type <- input$type %||% "box"
+      labs <- data$labels()
+      all_cols <- names(raw)
+      nums <- numeric_cols()
+      non_num <- setdiff(all_cols, nums)
+
+      if (type == "interaction") {
+        resp_default <- if (
+          !is.null(labs$value) && labs$value %in% nums
+        ) labs$value else nums[1]
+        a_default <- if (
+          !is.null(labs$group) && labs$group %in% all_cols
+        ) labs$group else (non_num[1] %||% all_cols[1])
+        b_choices <- setdiff(all_cols, c(a_default))
+        b_non_num <- intersect(b_choices, non_num)
+        b_default <- if (length(b_non_num) > 0) {
+          b_non_num[1]
+        } else {
+          b_choices[1]
+        }
+        return(shiny::tagList(
+          shiny::selectInput(
+            ns("interact_response"),
+            "Measurement column",
+            choices = nums,
+            selected = resp_default
+          ),
+          shiny::selectInput(
+            ns("interact_x"), "X-axis variable",
+            choices = all_cols,
+            selected = a_default
+          ),
+          shiny::selectInput(
+            ns("interact_color"),
+            "Color variable",
+            choices = all_cols,
+            selected = b_default
+          ),
+          shiny::textInput(
+            ns("color_lab"),
+            "Color variable label", value = ""
+          )
+        ))
+      }
+
+      # box or bar: optional color-by
+      exclude <- c(labs$value, labs$group)
+      candidates <- setdiff(all_cols, exclude)
+      if (length(candidates) == 0) {
+        return(shiny::p(
+          class = "hint",
+          paste(
+            "No additional columns available",
+            "for a second grouping variable."
+          )
+        ))
+      }
+      choices <- c(
+        "None" = "__none__",
+        stats::setNames(candidates, candidates)
+      )
+      return(shiny::tagList(
+        shiny::selectInput(
+          ns("color_by"),
+          "Color by (second variable)",
+          choices = choices, selected = "__none__"
+        ),
+        shiny::conditionalPanel(
+          "input.color_by != '__none__'", ns = ns,
+          shiny::textInput(
+            ns("color_lab"),
+            "Color variable label", value = ""
+          )
+        )
+      ))
+    })
+
+    has_color_var <- shiny::reactive({
+      type <- input$type %||% "box"
+      if (type == "interaction") {
+        return(TRUE)
+      }
+      color <- input$color_by %||% "__none__"
+      return(!identical(color, "__none__"))
+    })
+
+    cells <- shiny::reactive({
+      type <- input$type %||% "box"
+      raw <- data$raw()
+      shiny::req(raw)
+
+      if (type == "interaction") {
+        resp <- input$interact_response
+        a_col <- input$interact_x
+        b_col <- input$interact_color
+        shiny::req(resp, a_col, b_col)
+        shiny::req(
+          resp %in% names(raw),
+          a_col %in% names(raw),
+          b_col %in% names(raw)
+        )
+      } else {
+        labs <- data$labels()
+        resp <- labs$value
+        a_col <- labs$group
+        b_col <- input$color_by
+        shiny::req(
+          b_col,
+          !identical(b_col, "__none__")
+        )
+        shiny::req(
+          resp %in% names(raw),
+          a_col %in% names(raw),
+          b_col %in% names(raw)
+        )
+      }
+
+      values <- suppressWarnings(
+        as.numeric(as.character(raw[[resp]]))
+      )
+      out <- tibble::tibble(
+        value = values,
+        a = factor(as.character(raw[[a_col]])),
+        b = factor(as.character(raw[[b_col]]))
+      )
+      out <- out[
+        !is.na(out$value) &
+          !is.na(out$a) &
+          !is.na(out$b),
+      ]
+      out$a <- droplevels(out$a)
+      out$b <- droplevels(out$b)
+      return(out)
+    })
+
+    # ---- histogram / scatter selectors ----
+
     output$hist_col_ui <- shiny::renderUI({
       cols <- numeric_cols()
       choices <- c(
@@ -110,6 +263,8 @@ mod_plot_server <- function(id, data) {
       ))
     })
 
+    # ---- validation ----
+
     problems <- shiny::reactive({
       type <- input$type %||% "box"
       if (type %in% c("box", "bar")) {
@@ -119,6 +274,70 @@ mod_plot_server <- function(id, data) {
         }
         if (nlevels(tidy$group) < 1) {
           return("No groups found in the data.")
+        }
+        if (has_color_var()) {
+          b_col <- input$color_by
+          if (is.null(b_col) ||
+              identical(b_col, "__none__")) {
+            return(character(0))
+          }
+          cd <- cells()
+          if (is.null(cd) || nrow(cd) == 0) {
+            return("No usable rows after cleaning.")
+          }
+          if (nlevels(cd$b) < 2) {
+            return(paste(
+              b_col,
+              "needs at least 2 levels."
+            ))
+          }
+          if (nlevels(cd$b) > length(pal$categorical)) {
+            return(paste0(
+              b_col, " has ", nlevels(cd$b),
+              " levels; the palette supports at most ",
+              length(pal$categorical), "."
+            ))
+          }
+        }
+      }
+      if (type == "interaction") {
+        if (is.null(data$raw())) {
+          return("Load data on the Data tab first.")
+        }
+        resp <- input$interact_response
+        a_col <- input$interact_x
+        b_col <- input$interact_color
+        if (is.null(resp) || is.null(a_col) ||
+            is.null(b_col)) {
+          return(character(0))
+        }
+        chosen <- c(resp, a_col, b_col)
+        if (anyDuplicated(chosen) > 0) {
+          return(paste(
+            "The measurement, x-axis, and color",
+            "columns must all be different."
+          ))
+        }
+        cd <- cells()
+        if (is.null(cd) || nrow(cd) == 0) {
+          return("No usable rows after cleaning.")
+        }
+        if (nlevels(cd$a) < 2) {
+          return(paste(
+            a_col, "needs at least 2 levels."
+          ))
+        }
+        if (nlevels(cd$b) < 2) {
+          return(paste(
+            b_col, "needs at least 2 levels."
+          ))
+        }
+        if (nlevels(cd$b) > length(pal$categorical)) {
+          return(paste0(
+            b_col, " has ", nlevels(cd$b),
+            " levels; the palette supports at most ",
+            length(pal$categorical), "."
+          ))
         }
       }
       if (type == "hist") {
@@ -140,6 +359,8 @@ mod_plot_server <- function(id, data) {
       return(character(0))
     })
 
+    # ---- histogram helper ----
+
     hist_values <- shiny::reactive({
       col <- input$hist_col %||% "__tidy__"
       if (identical(col, "__tidy__")) {
@@ -155,6 +376,8 @@ mod_plot_server <- function(id, data) {
       return(list(values = raw[[col]], label = col))
     })
 
+    # ---- plot dispatch ----
+
     the_plot <- shiny::reactive({
       shiny::req(length(problems()) == 0)
       type <- input$type %||% "box"
@@ -164,6 +387,21 @@ mod_plot_server <- function(id, data) {
       ylab_in <- input$plot_ylab
 
       if (type == "box") {
+        if (has_color_var()) {
+          cd <- cells()
+          color_col <- input$color_by
+          color_label <- label_or(
+            input$color_lab, color_col
+          )
+          return(plot_grouped_boxes(
+            cd,
+            style = input$box_style %||% "box",
+            xlab = label_or(xlab_in, labs$group),
+            ylab = label_or(ylab_in, labs$value),
+            color_lab = color_label,
+            title = title
+          ))
+        }
         tidy <- data$tidy()
         return(plot_groups(
           tidy,
@@ -175,11 +413,42 @@ mod_plot_server <- function(id, data) {
       }
 
       if (type == "bar") {
+        if (has_color_var()) {
+          cd <- cells()
+          color_col <- input$color_by
+          color_label <- label_or(
+            input$color_lab, color_col
+          )
+          return(plot_grouped_bar(
+            cd,
+            xlab = label_or(xlab_in, labs$group),
+            ylab = label_or(ylab_in, labs$value),
+            color_lab = color_label,
+            title = title
+          ))
+        }
         tidy <- data$tidy()
         return(plot_bar(
           tidy, title = title,
           xlab = label_or(xlab_in, labs$group),
           ylab = label_or(ylab_in, labs$value)
+        ))
+      }
+
+      if (type == "interaction") {
+        cd <- cells()
+        a_col <- input$interact_x
+        b_col <- input$interact_color
+        resp <- input$interact_response
+        color_label <- label_or(
+          input$color_lab, b_col
+        )
+        return(plot_interaction(
+          cd,
+          xlab = label_or(xlab_in, a_col),
+          ylab = label_or(ylab_in, resp),
+          color_lab = color_label,
+          title = title
         ))
       }
 
@@ -220,14 +489,49 @@ mod_plot_server <- function(id, data) {
       the_plot, "plot"
     )
 
+    # ---- code text ----
+
     code_text <- shiny::reactive({
       shiny::req(length(problems()) == 0)
       type <- input$type %||% "box"
       labs <- data$labels()
       title_arg <- input$plot_title
-      has_title <- !is.null(title_arg) && nzchar(title_arg)
+      has_title <- !is.null(title_arg) &&
+        nzchar(title_arg)
 
       if (type == "box") {
+        if (has_color_var()) {
+          color_col <- input$color_by
+          style <- input$box_style %||% "box"
+          geom <- switch(style,
+            box = glue::glue(
+              "geom_boxplot(",
+              "aes(fill = {color_col}))"
+            ),
+            violin = glue::glue(
+              "geom_violin(",
+              "aes(fill = {color_col}))"
+            ),
+            points = glue::glue(
+              "geom_point(",
+              "aes(shape = {color_col}))"
+            )
+          )
+          code <- glue::glue(
+            "ggplot(my_data,\n",
+            "       aes(x = {labs$group},",
+            " y = {labs$value},\n",
+            "           color = {color_col})) +\n",
+            "  {geom}"
+          )
+          if (has_title) {
+            code <- glue::glue(
+              '{code} +\n',
+              '  labs(title = "{title_arg}")'
+            )
+          }
+          return(code)
+        }
         style <- input$box_style %||% "box"
         geom <- switch(
           style,
@@ -251,6 +555,40 @@ mod_plot_server <- function(id, data) {
       }
 
       if (type == "bar") {
+        if (has_color_var()) {
+          color_col <- input$color_by
+          code <- glue::glue(
+            "group_means <- my_data |>\n",
+            "  group_by({labs$group},",
+            " {color_col}) |>\n",
+            "  summarize(\n",
+            "    mean = mean({labs$value}),\n",
+            "    se = sd({labs$value})",
+            " / sqrt(n()),\n",
+            "    .groups = \"drop\"\n",
+            "  )\n\n",
+            "ggplot(group_means,\n",
+            "       aes(x = {labs$group},",
+            " y = mean,\n",
+            "           fill = {color_col})) +\n",
+            "  geom_col(",
+            "position = position_dodge(",
+            "0.7)) +\n",
+            "  geom_errorbar(\n",
+            "    aes(ymin = mean - se,",
+            " ymax = mean + se),\n",
+            "    width = 0.15,\n",
+            "    position = position_dodge(",
+            "0.7))"
+          )
+          if (has_title) {
+            code <- glue::glue(
+              '{code} +\n',
+              '  labs(title = "{title_arg}")'
+            )
+          }
+          return(code)
+        }
         code <- glue::glue(
           "group_means <- my_data |>\n",
           "  group_by({labs$group}) |>\n",
@@ -268,6 +606,43 @@ mod_plot_server <- function(id, data) {
           "                  ",
           "ymax = mean + se),\n",
           "               width = 0.15)"
+        )
+        if (has_title) {
+          code <- glue::glue(
+            '{code} +\n',
+            '  labs(title = "{title_arg}")'
+          )
+        }
+        return(code)
+      }
+
+      if (type == "interaction") {
+        resp <- input$interact_response
+        a_col <- input$interact_x
+        b_col <- input$interact_color
+        shiny::req(resp, a_col, b_col)
+        code <- glue::glue(
+          "cell_means <- my_data |>\n",
+          "  group_by({a_col}, {b_col}) |>\n",
+          "  summarize(\n",
+          "    mean = mean({resp}),\n",
+          "    se = sd({resp})",
+          " / sqrt(n()),\n",
+          "    .groups = \"drop\"\n",
+          "  )\n\n",
+          "ggplot(cell_means,\n",
+          "       aes(x = {a_col},",
+          " y = mean,\n",
+          "           color = {b_col},",
+          " group = {b_col})) +\n",
+          "  geom_errorbar(\n",
+          "    aes(ymin = mean - se,",
+          " ymax = mean + se),\n",
+          "    width = 0.08) +\n",
+          "  geom_line() +\n",
+          "  geom_point(",
+          "aes(shape = {b_col}),",
+          " size = 3)"
         )
         if (has_title) {
           code <- glue::glue(
@@ -314,6 +689,8 @@ mod_plot_server <- function(id, data) {
         return(code)
       }
     })
+
+    # ---- body output ----
 
     output$body <- shiny::renderUI({
       if (is.null(data$raw())) {
