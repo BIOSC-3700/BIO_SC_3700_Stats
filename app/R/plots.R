@@ -507,6 +507,44 @@ plot_histogram <- function(values, bins = 20,
   return(p)
 }
 
+# Histogram faceted by a grouping variable (rows).
+plot_faceted_histogram <- function(data, value_col,
+                                   facet_col,
+                                   bins = 20,
+                                   title = NULL,
+                                   xlab = "Value") {
+  dd <- data[!is.na(data[[value_col]]) &
+               !is.na(data[[facet_col]]), ]
+  dd$`.value` <- dd[[value_col]]
+  dd$`.facet` <- factor(dd[[facet_col]])
+  p <- ggplot2::ggplot(
+    dd, ggplot2::aes(x = .data$`.value`)
+  ) +
+    ggplot2::geom_histogram(
+      bins = bins, fill = pal$accent, alpha = 0.7,
+      color = pal$surface, linewidth = 0.3
+    ) +
+    ggplot2::facet_grid(
+      rows = ggplot2::vars(.data$`.facet`),
+      labeller = ggplot2::labeller(
+        `.facet` = ggplot2::label_value
+      )
+    ) +
+    ggplot2::labs(
+      x = xlab, y = "Count", title = title
+    ) +
+    theme_bio3700() +
+    ggplot2::theme(
+      panel.grid.major.x = ggplot2::element_line(
+        color = pal$grid, linewidth = 0.4
+      ),
+      strip.text.y = ggplot2::element_text(
+        angle = 0, hjust = 0
+      )
+    )
+  return(p)
+}
+
 # XY scatterplot from two columns of a raw data frame.
 plot_scatter <- function(data, x_col, y_col,
                          title = NULL, xlab = NULL,

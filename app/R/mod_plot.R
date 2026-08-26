@@ -46,6 +46,7 @@ mod_plot_ui <- function(id) {
       shiny::conditionalPanel(
         "input.type == 'hist'", ns = ns,
         shiny::uiOutput(ns("hist_col_ui")),
+        shiny::uiOutput(ns("hist_facet_ui")),
         shiny::numericInput(
           ns("bins"), "Number of bins",
           value = 20, min = 5, max = 100, step = 1
@@ -236,6 +237,27 @@ mod_plot_server <- function(id, data) {
       return(shiny::selectInput(
         ns("hist_col"), "Column to plot",
         choices = choices, selected = "__tidy__"
+      ))
+    })
+
+    output$hist_facet_ui <- shiny::renderUI({
+      raw <- data$raw()
+      shiny::req(raw)
+      all_cols <- names(raw)
+      nums <- numeric_cols()
+      non_num <- setdiff(all_cols, nums)
+      candidates <- if (length(non_num) > 0) {
+        non_num
+      } else {
+        all_cols
+      }
+      choices <- c(
+        "None" = "__none__",
+        stats::setNames(candidates, candidates)
+      )
+      return(shiny::selectInput(
+        ns("hist_facet"), "Facet by",
+        choices = choices, selected = "__none__"
       ))
     })
 
@@ -456,6 +478,17 @@ mod_plot_server <- function(id, data) {
         hv <- hist_values()
         bins <- input$bins %||% 20
         bins <- max(5, min(100, bins))
+        facet <- input$hist_facet %||% "__none__"
+        if (!identical(facet, "__none__") &&
+            facet %in% names(data$raw())) {
+          return(plot_faceted_histogram(
+            data$raw(),
+            value_col = hv$label,
+            facet_col = facet,
+            bins = bins, title = title,
+            xlab = label_or(xlab_in, hv$label)
+          ))
+        }
         return(plot_histogram(
           hv$values, bins = bins,
           title = title,
@@ -656,11 +689,18 @@ mod_plot_server <- function(id, data) {
       if (type == "hist") {
         hv <- hist_values()
         bins <- input$bins %||% 20
+        facet <- input$hist_facet %||% "__none__"
         code <- glue::glue(
           "ggplot(my_data,",
           " aes(x = {hv$label})) +\n",
           "  geom_histogram(bins = {bins})"
         )
+        if (!identical(facet, "__none__")) {
+          code <- glue::glue(
+            "{code} +\n",
+            "  facet_grid(rows = vars({facet}))"
+          )
+        }
         if (has_title) {
           code <- glue::glue(
             '{code} +\n',
