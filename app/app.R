@@ -52,23 +52,35 @@ help_panel <- function() {
     ),
     h3("Which test do I want?"),
     tags$ul(
-      tags$li(tags$b("One-sample t-test: "), paste(
-        "one group of measurements compared against a fixed number you",
-        "specify — an expected value from theory or a published result."
-      )),
-      tags$li(tags$b("Two-sample t-test: "), paste(
-        "two groups compared against each other. Use the paired option",
-        "when the same individual was measured twice."
-      )),
-      tags$li(tags$b("One-way ANOVA: "), paste(
-        "three or more groups of a single factor compared at once. Add",
-        "Tukey's HSD to find out which particular pairs differ."
-      )),
-      tags$li(tags$b("Two-way ANOVA: "), paste(
-        "two factors crossed with each other — genotype and treatment,",
-        "site and season. Tests each factor and, crucially, whether",
-        "they interact."
-      ))
+      tags$li(
+        tags$b("One-sample t-test: "),
+        paste(
+          "one group of measurements compared against a fixed number you",
+          "specify — an expected value from theory or a published result."
+        )
+      ),
+      tags$li(
+        tags$b("Two-sample t-test: "),
+        paste(
+          "two groups compared against each other. Use the paired option",
+          "when the same individual was measured twice."
+        )
+      ),
+      tags$li(
+        tags$b("One-way ANOVA: "),
+        paste(
+          "three or more groups of a single factor compared at once. Add",
+          "Tukey's HSD to find out which particular pairs differ."
+        )
+      ),
+      tags$li(
+        tags$b("Two-way ANOVA: "),
+        paste(
+          "two factors crossed with each other — genotype and treatment,",
+          "site and season. Tests each factor and, crucially, whether",
+          "they interact."
+        )
+      )
     ),
     h3("Reading an interaction"),
     p(paste(

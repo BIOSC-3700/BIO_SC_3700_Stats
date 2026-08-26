@@ -65,10 +65,12 @@ cannot_run_panel <- function(problems) {
 kv_table <- function(keys, values) {
   rows <- Map(
     function(k, v) shiny::tags$tr(shiny::tags$th(k), shiny::tags$td(v)),
-    keys, values
+    keys,
+    values
   )
   out <- shiny::tags$table(
-    class = "kv-table", shiny::tags$tbody(rows)
+    class = "kv-table",
+    shiny::tags$tbody(rows)
   )
   return(out)
 }
@@ -92,10 +94,15 @@ plot_controls <- function(ns, style_choices = TRUE) {
   if (style_choices) {
     items <- c(
       list(shiny::radioButtons(
-        ns("plot_style"), "Plot style",
-        choices = c("Boxplot" = "box", "Violin" = "violin",
-                    "Points only" = "points"),
-        selected = "box", inline = TRUE
+        ns("plot_style"),
+        "Plot style",
+        choices = c(
+          "Boxplot" = "box",
+          "Violin" = "violin",
+          "Points only" = "points"
+        ),
+        selected = "box",
+        inline = TRUE
       )),
       items
     )
@@ -104,14 +111,21 @@ plot_controls <- function(ns, style_choices = TRUE) {
 }
 
 # Wraps a plot output plus its PNG download button.
-plot_panel <- function(ns, height = "460px", plot_id = "plot",
-                       dl_id = "download_plot") {
+plot_panel <- function(
+  ns,
+  height = "460px",
+  plot_id = "plot",
+  dl_id = "download_plot"
+) {
   out <- shiny::tagList(
     shiny::plotOutput(ns(plot_id), height = height),
     shiny::div(
       class = "dl-row",
-      shiny::downloadButton(ns(dl_id), "Download PNG (300 dpi)",
-                            class = "btn-sm btn-outline-secondary")
+      shiny::downloadButton(
+        ns(dl_id),
+        "Download PNG (300 dpi)",
+        class = "btn-sm btn-outline-secondary"
+      )
     )
   )
   return(out)
@@ -125,7 +139,11 @@ plot_download_handler <- function(plot_fn, name) {
     },
     content = function(file) {
       ggplot2::ggsave(
-        file, plot = plot_fn(), width = 8, height = 5, dpi = 300,
+        file,
+        plot = plot_fn(),
+        width = 8,
+        height = 5,
+        dpi = 300,
         bg = pal$surface
       )
       return(invisible(NULL))
@@ -137,11 +155,11 @@ plot_download_handler <- function(plot_fn, name) {
 # Description block shown at the top of every statistics tab.
 # Students must read this and click "Run analysis" before
 # results appear.
-test_intro <- function(title, description, hypotheses,
-                       ns, confirmed) {
+test_intro <- function(title, description, hypotheses, ns, confirmed) {
   btn <- if (!confirmed) {
     shiny::actionButton(
-      ns("run_analysis"), "Run analysis",
+      ns("run_analysis"),
+      "Run analysis",
       class = "btn-primary mt-3"
     )
   }

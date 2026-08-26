@@ -11,16 +11,11 @@
 # often, so the app states its inference and lets them override it.
 
 example_files <- c(
-  "Horned lizard horn length — 2 groups" =
-    "horned_lizards.csv",
-  "Jet lag and knees — 3 light treatments" =
-    "jetlag_knees.csv",
-  "Blackbird antibodies — paired before/after" =
-    "blackbird_antibodies.csv",
-  "Lion nose coloration — age vs. proportion black" =
-    "lion_noses.csv",
-  "Intertidal algae — height × herbivores, factorial" =
-    "intertidal_algae.csv"
+  "Horned lizard horn length — 2 groups" = "horned_lizards.csv",
+  "Jet lag and knees — 3 light treatments" = "jetlag_knees.csv",
+  "Blackbird antibodies — paired before/after" = "blackbird_antibodies.csv",
+  "Lion nose coloration — age vs. proportion black" = "lion_noses.csv",
+  "Intertidal algae — height × herbivores, factorial" = "intertidal_algae.csv"
 )
 
 
@@ -30,7 +25,8 @@ mod_data_ui <- function(id) {
     sidebar = bslib::sidebar(
       width = 380,
       shiny::radioButtons(
-        ns("source"), "Where is your data?",
+        ns("source"),
+        "Where is your data?",
         choices = c(
           "Upload a file" = "file",
           "Paste from a spreadsheet" = "paste",
@@ -39,19 +35,23 @@ mod_data_ui <- function(id) {
         selected = "example"
       ),
       shiny::conditionalPanel(
-        "input.source == 'file'", ns = ns,
+        "input.source == 'file'",
+        ns = ns,
         shiny::fileInput(
-          ns("file"), "Choose a CSV or Excel file",
+          ns("file"),
+          "Choose a CSV or Excel file",
           accept = c(".csv", ".txt", ".tsv", ".xlsx", ".xls")
         ),
         shiny::uiOutput(ns("sheet_ui"))
       ),
       shiny::conditionalPanel(
-        "input.source == 'paste'", ns = ns,
+        "input.source == 'paste'",
+        ns = ns,
         shiny::textAreaInput(
           ns("paste_text"),
           "Copy cells from Excel or Google Sheets and paste here",
-          rows = 9, resize = "vertical",
+          rows = 9,
+          resize = "vertical",
           placeholder = "treatment\theight\ncontrol\t12.1\ncontrol\t11.4\n..."
         ),
         shiny::p(
@@ -59,14 +59,19 @@ mod_data_ui <- function(id) {
           "Include the header row. Tabs, commas, and semicolons all work."
         ),
         shiny::actionButton(
-          ns("paste_go"), "Use this data", class = "btn-primary btn-sm"
+          ns("paste_go"),
+          "Use this data",
+          class = "btn-primary btn-sm"
         )
       ),
       shiny::conditionalPanel(
-        "input.source == 'example'", ns = ns,
+        "input.source == 'example'",
+        ns = ns,
         shiny::selectInput(
-          ns("example"), "Example dataset",
-          choices = example_files, selected = example_files[[1]]
+          ns("example"),
+          "Example dataset",
+          choices = example_files,
+          selected = example_files[[1]]
         )
       ),
       shiny::hr(),
@@ -85,7 +90,8 @@ mod_data_ui <- function(id) {
       )
     ),
     shiny::conditionalPanel(
-      "input.source == 'example'", ns = ns,
+      "input.source == 'example'",
+      ns = ns,
       shiny::hr(),
       shiny::div(
         class = "references",
@@ -95,14 +101,16 @@ mod_data_ui <- function(id) {
             shiny::strong("Horned lizards:"),
             "Young, K. V., E. D. Brodie Jr., and E. D. Brodie III.",
             "2004. How the horned lizard got its horns.",
-            shiny::em("Science"), "304: 65."
+            shiny::em("Science"),
+            "304: 65."
           ),
           shiny::tags$li(
             shiny::strong("Jet lag and knees:"),
             "Wright, K. P., Jr. and C. A. Czeisler. 2002.",
             "Absence of circadian phase resetting in",
             "response to bright light behind the knees.",
-            shiny::em("Science"), "297: 571."
+            shiny::em("Science"),
+            "297: 571."
           ),
           shiny::tags$li(
             shiny::strong("Blackbird antibodies:"),
@@ -117,14 +125,16 @@ mod_data_ui <- function(id) {
             "Whitman, K., A. M. Starfield, H. S. Quadling,",
             "and C. Packer. 2004. Sustainable trophy hunting",
             "of African lions.",
-            shiny::em("Nature"), "428: 175\u2013178."
+            shiny::em("Nature"),
+            "428: 175\u2013178."
           ),
           shiny::tags$li(
             shiny::strong("Intertidal algae:"),
             "Harley, C. D. G. 2003. Abiotic stress and",
             "herbivory interact to set range limits across a",
             "two-dimensional stress gradient.",
-            shiny::em("Ecology"), "84: 1477\u20131488."
+            shiny::em("Ecology"),
+            "84: 1477\u20131488."
           )
         ),
         shiny::p(
@@ -132,7 +142,8 @@ mod_data_ui <- function(id) {
           "Data from Whitlock & Schluter,",
           shiny::em("The Analysis of Biological Data."),
           "R package:",
-          shiny::tags$code("abdData"), "."
+          shiny::tags$code("abdData"),
+          "."
         )
       )
     )
@@ -168,7 +179,10 @@ mod_data_server <- function(id) {
         return(NULL)
       }
       return(shiny::selectInput(
-        ns("sheet"), "Which sheet?", choices = sheets, selected = sheets[1]
+        ns("sheet"),
+        "Which sheet?",
+        choices = sheets,
+        selected = sheets[1]
       ))
     })
 
@@ -217,15 +231,19 @@ mod_data_server <- function(id) {
         ","
       }
       return(read_attempt(readr::read_delim(
-        I(txt), delim = delim, show_col_types = FALSE,
-        progress = FALSE, trim_ws = TRUE
+        I(txt),
+        delim = delim,
+        show_col_types = FALSE,
+        progress = FALSE,
+        trim_ws = TRUE
       )))
     })
 
     example_result <- shiny::reactive({
       shiny::req(input$example)
       return(read_attempt(readr::read_csv(
-        fs::path("data", input$example), show_col_types = FALSE,
+        fs::path("data", input$example),
+        show_col_types = FALSE,
         progress = FALSE
       )))
     })
@@ -276,7 +294,8 @@ mod_data_server <- function(id) {
       all_cols <- names(data)
       guess <- inferred_layout()
       layout_input <- shiny::radioButtons(
-        ns("layout"), "How is your data arranged?",
+        ns("layout"),
+        "How is your data arranged?",
         choices = c(
           "Long — one measurement column, one group column" = "long",
           "Wide — one column per group" = "wide"
@@ -284,19 +303,23 @@ mod_data_server <- function(id) {
         selected = guess
       )
       long_ui <- shiny::conditionalPanel(
-        "input.layout == 'long'", ns = ns,
+        "input.layout == 'long'",
+        ns = ns,
         shiny::selectInput(
-          ns("value_col"), "Measurement column",
+          ns("value_col"),
+          "Measurement column",
           choices = all_cols,
           selected = if (length(nums) > 0) nums[1] else all_cols[1]
         ),
         shiny::selectInput(
-          ns("group_col"), "Group column",
+          ns("group_col"),
+          "Group column",
           choices = all_cols,
           selected = {
             non_numeric <- setdiff(all_cols, nums)
             others <- setdiff(
-              all_cols, if (length(nums) > 0) nums[1] else character(0)
+              all_cols,
+              if (length(nums) > 0) nums[1] else character(0)
             )
             if (length(non_numeric) > 0) {
               non_numeric[1]
@@ -309,19 +332,26 @@ mod_data_server <- function(id) {
         )
       )
       wide_ui <- shiny::conditionalPanel(
-        "input.layout == 'wide'", ns = ns,
+        "input.layout == 'wide'",
+        ns = ns,
         shiny::checkboxGroupInput(
-          ns("wide_cols"), "Which columns are the groups?",
+          ns("wide_cols"),
+          "Which columns are the groups?",
           choices = all_cols,
           selected = if (length(nums) > 0) nums else all_cols
         )
       )
       return(shiny::tagList(
-        layout_input, long_ui, wide_ui,
-        shiny::p(class = "hint", glue::glue(
-          "The app guessed {guess} format from your column types. ",
-          "Change it if that is wrong."
-        ))
+        layout_input,
+        long_ui,
+        wide_ui,
+        shiny::p(
+          class = "hint",
+          glue::glue(
+            "The app guessed {guess} format from your column types. ",
+            "Change it if that is wrong."
+          )
+        )
       ))
     })
 
@@ -337,18 +367,18 @@ mod_data_server <- function(id) {
         cols <- intersect(input$wide_cols %||% numeric_cols(), names(data))
         if (length(cols) < 1) {
           return(list(
-            data = NULL, dropped = 0,
+            data = NULL,
+            dropped = 0,
             problems = "Pick at least one group column."
           ))
         }
-        # Stacked by hand rather than with tidyr::pivot_longer(). tidyr
-        # imports stringr, which drags in stringi -- 14 MB of the
-        # download for a single reshape. Column-major order also keeps
-        # each group's values in their original row order, which is
-        # what the paired t-test needs.
+        # Stacked by hand rather than with tidyr::pivot_longer().
+        # Column-major order also keeps each group's values in their
+        # original row order, which is what the paired t-test needs.
         long <- tibble::tibble(
           group = factor(
-            rep(cols, each = nrow(data)), levels = cols
+            rep(cols, each = nrow(data)),
+            levels = cols
           ),
           value = unlist(
             lapply(cols, function(column) data[[column]]),
@@ -365,7 +395,8 @@ mod_data_server <- function(id) {
         }
         if (identical(value_col, group_col)) {
           return(list(
-            data = NULL, dropped = 0,
+            data = NULL,
+            dropped = 0,
             problems = paste(
               "The measurement column and the group column cannot be",
               "the same column."
@@ -376,9 +407,12 @@ mod_data_server <- function(id) {
           value = data[[value_col]],
           group = as.character(data[[group_col]])
         )
-        long$group <- factor(long$group, levels = sort(unique(
-          long$group[!is.na(long$group)]
-        )))
+        long$group <- factor(
+          long$group,
+          levels = sort(unique(
+            long$group[!is.na(long$group)]
+          ))
+        )
       }
       # Coerce and count what the coercion destroyed, so a column of
       # "12.1 cm" strings produces a message rather than silent NAs.
@@ -386,12 +420,15 @@ mod_data_server <- function(id) {
       long$value <- suppressWarnings(as.numeric(as.character(long$value)))
       broke <- sum(before & is.na(long$value))
       if (broke > 0) {
-        problems <- c(problems, glue::glue(
-          "{broke} value{ifelse(broke == 1, '', 's')} could not be read ",
-          "as a number and {ifelse(broke == 1, 'was', 'were')} dropped. ",
-          "Check for units, commas, or stray text in the measurement ",
-          "column."
-        ))
+        problems <- c(
+          problems,
+          glue::glue(
+            "{broke} value{ifelse(broke == 1, '', 's')} could not be read ",
+            "as a number and {ifelse(broke == 1, 'was', 'were')} dropped. ",
+            "Check for units, commas, or stray text in the measurement ",
+            "column."
+          )
+        )
       }
       n_before <- nrow(long)
       long <- long[!is.na(long$value) & !is.na(long$group), ]
@@ -404,10 +441,13 @@ mod_data_server <- function(id) {
       counts <- table(long$group)
       thin <- names(counts)[counts < 2]
       if (length(thin) > 0) {
-        problems <- c(problems, glue::glue(
-          "These groups have fewer than 2 values, so no spread can be ",
-          "estimated for them: {paste(thin, collapse = ', ')}."
-        ))
+        problems <- c(
+          problems,
+          glue::glue(
+            "These groups have fewer than 2 values, so no spread can be ",
+            "estimated for them: {paste(thin, collapse = ', ')}."
+          )
+        )
       }
       return(list(data = long, dropped = dropped, problems = problems))
     })
@@ -456,9 +496,12 @@ mod_data_server <- function(id) {
       tr <- tidy_result()
       msgs <- list()
       if (!is.null(tr) && length(tr$problems) > 0) {
-        msgs <- c(msgs, lapply(tr$problems, function(m) {
-          shiny::div(class = "alert-box alert-warn", m)
-        }))
+        msgs <- c(
+          msgs,
+          lapply(tr$problems, function(m) {
+            shiny::div(class = "alert-box alert-warn", m)
+          })
+        )
       }
       if (!is.null(tr) && !is.null(tr$data)) {
         n_groups <- nlevels(tr$data$group)
@@ -467,13 +510,16 @@ mod_data_server <- function(id) {
         } else {
           ""
         }
-        msgs <- c(msgs, list(shiny::div(
-          class = "alert-box alert-ok",
-          glue::glue(
-            "Ready: {nrow(tr$data)} measurements in {n_groups} ",
-            "group{ifelse(n_groups == 1, '', 's')}.{dropped_txt}"
-          )
-        )))
+        msgs <- c(
+          msgs,
+          list(shiny::div(
+            class = "alert-box alert-ok",
+            glue::glue(
+              "Ready: {nrow(tr$data)} measurements in {n_groups} ",
+              "group{ifelse(n_groups == 1, '', 's')}.{dropped_txt}"
+            )
+          ))
+        )
       }
       return(shiny::tagList(msgs))
     })
@@ -482,7 +528,8 @@ mod_data_server <- function(id) {
       data <- raw()
       shiny::req(data)
       DT::datatable(
-        data, rownames = FALSE,
+        data,
+        rownames = FALSE,
         options = list(pageLength = 8, scrollX = TRUE, dom = "tip")
       )
     })
@@ -493,7 +540,9 @@ mod_data_server <- function(id) {
         shiny::req(data)
         summary_table(group_summary(data))
       },
-      striped = TRUE, spacing = "xs", align = "lrrrrrr"
+      striped = TRUE,
+      spacing = "xs",
+      align = "lrrrrrr"
     )
 
     return(list(
