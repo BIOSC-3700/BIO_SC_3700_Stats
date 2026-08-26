@@ -1,4 +1,4 @@
-# BIO_SC 3700 — Basic Statistics
+# BIO_SC 3700 — Statistical Analysis
 #
 # A point-and-click app for two-sample t-tests, one-sample t-tests, and
 # one-way ANOVA. Runs in the browser via shinylive, so keep the package
@@ -115,7 +115,7 @@ help_panel <- function() {
 }
 
 ui <- page_navbar(
-  title = "BIO_SC 3700 — Basic Statistics",
+  title = "BIO_SC 3700 — Statistical Analysis",
   theme = app_theme,
   fillable = FALSE,
   header = tags$head(
