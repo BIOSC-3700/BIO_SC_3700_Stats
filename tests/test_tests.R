@@ -34,7 +34,8 @@ testServer(mod_ttest2_server,
                     var_equal = FALSE, alt = "two.sided",
                     conf = 0.95, plot_style = "box",
                     plot_title = "", plot_xlab = "",
-                    plot_ylab = "")
+                    plot_ylab = "",
+                    run_analysis = 1)
   ref <- t.test(
     lizard$horn.length[lizard$group == lv[1]],
     lizard$horn.length[lizard$group == lv[2]])

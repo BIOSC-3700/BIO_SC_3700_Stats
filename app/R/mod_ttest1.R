@@ -35,6 +35,14 @@ mod_ttest1_server <- function(id, data,
   shiny::moduleServer(id, function(input, output, session) {
     ns <- session$ns
 
+    confirmed <- shiny::reactiveVal(FALSE)
+    shiny::observeEvent(data$raw(), {
+      confirmed(FALSE)
+    }, ignoreInit = TRUE)
+    shiny::observeEvent(input$run_analysis, {
+      confirmed(TRUE)
+    })
+
     numeric_columns <- shiny::reactive({
       raw <- data$raw()
       if (is.null(raw)) {
@@ -281,12 +289,44 @@ mod_ttest1_server <- function(id, data,
     })
 
     output$body <- shiny::renderUI({
+      intro <- test_intro(
+        title = "One-sample t-test",
+        description = paste(
+          "A one-sample t-test determines whether",
+          "the mean of a sample is significantly",
+          "different from a known or hypothesized",
+          "value. It can also test the mean",
+          "difference between paired measurements."
+        ),
+        hypotheses = shiny::tagList(
+          shiny::tags$dt("H\u2080 (null)"),
+          shiny::tags$dd(paste(
+            "\u03bc = \u03bc\u2080 \u2014",
+            "the population mean equals the",
+            "hypothesized value."
+          )),
+          shiny::tags$dt("H\u2090 (alternative)"),
+          shiny::tags$dd(paste(
+            "\u03bc \u2260 \u03bc\u2080 \u2014",
+            "the population mean differs from the",
+            "hypothesized value."
+          ))
+        ),
+        ns = ns, confirmed = confirmed()
+      )
       if (is.null(data$raw())) {
-        return(no_data_panel("a one-sample t-test"))
+        return(shiny::tagList(
+          intro, no_data_panel("a one-sample t-test")
+        ))
+      }
+      if (!confirmed()) {
+        return(intro)
       }
       probs <- problems()
       if (length(probs) > 0) {
-        return(cannot_run_panel(probs))
+        return(shiny::tagList(
+          intro, cannot_run_panel(probs)
+        ))
       }
       plot_card <- if (show_plots) {
         bslib::card(
@@ -296,6 +336,7 @@ mod_ttest1_server <- function(id, data,
       }
       widths <- if (show_plots) c(5, 7) else 12
       return(shiny::tagList(
+        intro,
         shiny::uiOutput(ns("verdict")),
         bslib::layout_columns(
           col_widths = widths,

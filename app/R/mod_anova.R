@@ -27,6 +27,14 @@ mod_anova_server <- function(id, data,
   shiny::moduleServer(id, function(input, output, session) {
     ns <- session$ns
 
+    confirmed <- shiny::reactiveVal(FALSE)
+    shiny::observeEvent(data$tidy(), {
+      confirmed(FALSE)
+    }, ignoreInit = TRUE)
+    shiny::observeEvent(input$run_analysis, {
+      confirmed(TRUE)
+    })
+
     output$setup <- shiny::renderUI({
       tidy <- data$tidy()
       if (is.null(tidy)) {
@@ -289,12 +297,43 @@ mod_anova_server <- function(id, data,
     })
 
     output$body <- shiny::renderUI({
+      intro <- test_intro(
+        title = "One-way ANOVA",
+        description = paste(
+          "A one-way analysis of variance (ANOVA)",
+          "tests whether the means of three or more",
+          "independent groups are all equal. It",
+          "extends the two-sample t-test to more",
+          "than two groups."
+        ),
+        hypotheses = shiny::tagList(
+          shiny::tags$dt("H\u2080 (null)"),
+          shiny::tags$dd(paste(
+            "\u03bc\u2081 = \u03bc\u2082 =",
+            "\u2026 = \u03bc\u2096 \u2014",
+            "all group means are equal."
+          )),
+          shiny::tags$dt("H\u2090 (alternative)"),
+          shiny::tags$dd(paste(
+            "At least one group mean differs",
+            "from the others."
+          ))
+        ),
+        ns = ns, confirmed = confirmed()
+      )
       if (is.null(data$tidy())) {
-        return(no_data_panel("an ANOVA"))
+        return(shiny::tagList(
+          intro, no_data_panel("an ANOVA")
+        ))
+      }
+      if (!confirmed()) {
+        return(intro)
       }
       probs <- problems()
       if (length(probs) > 0) {
-        return(cannot_run_panel(probs))
+        return(shiny::tagList(
+          intro, cannot_run_panel(probs)
+        ))
       }
       tukey_section <- if (isTRUE(input$tukey)) {
         tukey_content <- if (show_plots) {
@@ -333,6 +372,7 @@ mod_anova_server <- function(id, data,
       }
       widths <- if (show_plots) c(6, 6) else 12
       return(shiny::tagList(
+        intro,
         shiny::uiOutput(ns("verdict")),
         shiny::uiOutput(ns("welch")),
         bslib::layout_columns(

@@ -134,6 +134,30 @@ plot_download_handler <- function(plot_fn, name) {
   return(out)
 }
 
+# Description block shown at the top of every statistics tab.
+# Students must read this and click "Run analysis" before
+# results appear.
+test_intro <- function(title, description, hypotheses,
+                       ns, confirmed) {
+  btn <- if (!confirmed) {
+    shiny::actionButton(
+      ns("run_analysis"), "Run analysis",
+      class = "btn-primary mt-3"
+    )
+  }
+  out <- shiny::div(
+    class = "test-intro",
+    shiny::h5(title),
+    shiny::p(description),
+    shiny::tags$dl(
+      class = "hypotheses",
+      hypotheses
+    ),
+    btn
+  )
+  return(out)
+}
+
 # Collapsible section showing the R code behind a result.
 code_accordion <- function(code_text) {
   out <- bslib::accordion(

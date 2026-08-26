@@ -44,6 +44,14 @@ mod_anova2_server <- function(id, data,
   shiny::moduleServer(id, function(input, output, session) {
     ns <- session$ns
 
+    confirmed <- shiny::reactiveVal(FALSE)
+    shiny::observeEvent(data$raw(), {
+      confirmed(FALSE)
+    }, ignoreInit = TRUE)
+    shiny::observeEvent(input$run_analysis, {
+      confirmed(TRUE)
+    })
+
     all_columns <- shiny::reactive({
       raw <- data$raw()
       if (is.null(raw)) {
@@ -770,12 +778,49 @@ mod_anova2_server <- function(id, data,
     }
 
     output$body <- shiny::renderUI({
+      intro <- test_intro(
+        title = "Two-way factorial ANOVA",
+        description = paste(
+          "A two-way factorial ANOVA tests the",
+          "effects of two categorical factors on a",
+          "continuous response variable, including",
+          "whether the factors interact \u2014 that is,",
+          "whether the effect of one factor depends",
+          "on the level of the other."
+        ),
+        hypotheses = shiny::tagList(
+          shiny::tags$dt("H\u2080 (interaction)"),
+          shiny::tags$dd(paste(
+            "The effect of factor A does not depend",
+            "on the level of factor B."
+          )),
+          shiny::tags$dt("H\u2080 (main effect A)"),
+          shiny::tags$dd(paste(
+            "All levels of factor A have the same",
+            "mean response."
+          )),
+          shiny::tags$dt("H\u2080 (main effect B)"),
+          shiny::tags$dd(paste(
+            "All levels of factor B have the same",
+            "mean response."
+          ))
+        ),
+        ns = ns, confirmed = confirmed()
+      )
       if (is.null(data$raw())) {
-        return(no_data_panel("a two-way factorial ANOVA"))
+        return(shiny::tagList(
+          intro,
+          no_data_panel("a two-way factorial ANOVA")
+        ))
+      }
+      if (!confirmed()) {
+        return(intro)
       }
       probs <- problems()
       if (length(probs) > 0) {
-        return(cannot_run_panel(probs))
+        return(shiny::tagList(
+          intro, cannot_run_panel(probs)
+        ))
       }
       shiny::req(ready())
       interaction_card <- if (show_plots) {
@@ -802,6 +847,7 @@ mod_anova2_server <- function(id, data,
       }
       widths <- if (show_plots) c(6, 6) else 12
       return(shiny::tagList(
+        intro,
         shiny::uiOutput(ns("verdict")),
         shiny::uiOutput(ns("balance")),
         bslib::layout_columns(

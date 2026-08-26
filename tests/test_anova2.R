@@ -20,7 +20,8 @@ base_inputs <- function(session, ...) {
     fac_b = "herbivores", tukey = TRUE,
     simple_dir = "a_within_b", conf = 0.95,
     swap_axes = FALSE, plot_style = "box",
-    plot_title = "", plot_xlab = "", plot_ylab = "")
+    plot_title = "", plot_xlab = "", plot_ylab = "",
+    run_analysis = 1)
   overrides <- list(...)
   defaults[names(overrides)] <- overrides
   do.call(session$setInputs, defaults)
