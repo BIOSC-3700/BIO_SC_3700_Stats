@@ -11,10 +11,10 @@ lizard <- read_csv("data/horned_lizards.csv",
                    show_col_types = FALSE)
 lizard_tidy <- tibble(value = lizard$horn.length,
                       group = factor(lizard$group))
-finch <- read_csv("data/kenya_finches.csv",
-                  show_col_types = FALSE)
-finch_tidy <- tibble(value = finch$mass,
-                     group = factor(finch$species))
+jetlag <- read_csv("data/jetlag_knees.csv",
+                   show_col_types = FALSE)
+jetlag_tidy <- tibble(value = jetlag$shift,
+                      group = factor(jetlag$treatment))
 bb <- read_csv("data/blackbird_antibodies.csv",
                show_col_types = FALSE)
 
@@ -81,8 +81,8 @@ testServer(mod_ttest2_server,
 
 # ---- two-sample: ANOVA data has 3 groups, picks 2 -------------------
 testServer(mod_ttest2_server,
-           args = list(data = stub(finch_tidy, finch)), {
-  session$setInputs(g1 = "CRU.WAXB", g2 = "WB.SPARW",
+           args = list(data = stub(jetlag_tidy, jetlag)), {
+  session$setInputs(g1 = "control", g2 = "eyes",
                     paired = FALSE, var_equal = FALSE,
                     alt = "two.sided", conf = 0.95,
                     plot_style = "box", plot_title = "",
@@ -90,8 +90,8 @@ testServer(mod_ttest2_server,
   ok("subsets 3 groups to 2",
      nlevels(pair_data()$group) == 2)
   ref <- t.test(
-    finch$mass[finch$species == "CRU.WAXB"],
-    finch$mass[finch$species == "WB.SPARW"])
+    jetlag$shift[jetlag$treatment == "control"],
+    jetlag$shift[jetlag$treatment == "eyes"])
   ok("subset p matches",
      near(result()$p.value, ref$p.value))
 })
@@ -139,19 +139,21 @@ testServer(mod_ttest1_server,
 
 # ---- ANOVA ------------------------------------------------------------
 testServer(mod_anova_server,
-           args = list(data = stub(finch_tidy, finch,
-                                   "mass", "species")), {
+           args = list(data = stub(jetlag_tidy, jetlag,
+                                   "shift", "treatment")), {
   session$setInputs(tukey = TRUE, conf = 0.95,
                     plot_style = "box", plot_title = "",
                     plot_xlab = "", plot_ylab = "")
-  ref <- summary(aov(mass ~ species, data = finch))[[1]]
+  ref <- summary(aov(shift ~ treatment,
+                     data = jetlag))[[1]]
   ok("anova F matches",
      near(anova_row()$f, ref[1, "F value"]))
   ok("anova p matches",
      near(anova_row()$p, ref[1, "Pr(>F)"]))
   tk <- tukey_table()
   reft <- as.data.frame(
-    TukeyHSD(aov(mass ~ species, finch))$species)
+    TukeyHSD(aov(shift ~ treatment,
+                 jetlag))$treatment)
   ok("tukey has 3 rows", nrow(tk) == 3)
   ok("tukey p values match",
      all(abs(tk$p_adj - reft$`p adj`) < 1e-9))

@@ -13,8 +13,8 @@
 example_files <- c(
   "Horned lizard horn length — 2 groups" =
     "horned_lizards.csv",
-  "Kenya finch body mass — 3 species" =
-    "kenya_finches.csv",
+  "Jet lag and knees — 3 light treatments" =
+    "jetlag_knees.csv",
   "Blackbird antibodies — paired before/after" =
     "blackbird_antibodies.csv",
   "Lion nose coloration — age vs. proportion black" =
@@ -98,11 +98,11 @@ mod_data_ui <- function(id) {
             shiny::em("Science"), "304: 65."
           ),
           shiny::tags$li(
-            shiny::strong("Kenya finches:"),
-            "Schluter, D. 1988. The evolution of finch",
-            "communities on islands and continents: Kenya",
-            "vs. Gal\u00e1pagos.",
-            shiny::em("Ecological Monographs"), "58: 229\u2013249."
+            shiny::strong("Jet lag and knees:"),
+            "Wright, K. P., Jr. and C. A. Czeisler. 2002.",
+            "Absence of circadian phase resetting in",
+            "response to bright light behind the knees.",
+            shiny::em("Science"), "297: 571."
           ),
           shiny::tags$li(
             shiny::strong("Blackbird antibodies:"),
