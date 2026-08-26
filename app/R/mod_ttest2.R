@@ -59,10 +59,6 @@ mod_ttest2_server <- function(id, data,
           ns("g2"), "Second group", choices = groups, selected = groups[2]
         ),
         shiny::checkboxInput(
-          ns("paired"), "Paired samples (same subject measured twice)",
-          value = FALSE
-        ),
-        shiny::checkboxInput(
           ns("var_equal"), "Assume equal variances", value = FALSE
         ),
         shiny::p(
@@ -134,14 +130,6 @@ mod_ttest2_server <- function(id, data,
           "{paste(thin, collapse = ', ')}."
         ))
       }
-      if (isTRUE(input$paired) && length(counts) == 2 &&
-            counts[[1]] != counts[[2]]) {
-        out <- c(out, glue::glue(
-          "A paired test needs the same number of values in each group, ",
-          "but there are {counts[[1]]} and {counts[[2]]}. Either the ",
-          "data is not paired, or some rows are missing."
-        ))
-      }
       return(out)
     })
 
@@ -150,24 +138,16 @@ mod_ttest2_server <- function(id, data,
       pd <- pair_data()
       x <- pd$value[pd$group == input$g1]
       y <- pd$value[pd$group == input$g2]
-      if (isTRUE(input$paired)) {
-        out <- stats::t.test(
-          x, y, paired = TRUE, alternative = input$alt,
-          conf.level = conf_level()
-        )
-      } else {
-        out <- stats::t.test(
-          x, y, paired = FALSE, var.equal = isTRUE(input$var_equal),
-          alternative = input$alt, conf.level = conf_level()
-        )
-      }
+      out <- stats::t.test(
+        x, y, paired = FALSE,
+        var.equal = isTRUE(input$var_equal),
+        alternative = input$alt,
+        conf.level = conf_level()
+      )
       return(out)
     })
 
     test_name <- shiny::reactive({
-      if (isTRUE(input$paired)) {
-        return("Paired t-test")
-      }
       if (isTRUE(input$var_equal)) {
         return("Two-sample t-test (pooled variance)")
       }
@@ -194,16 +174,8 @@ mod_ttest2_server <- function(id, data,
 
     output$stats <- shiny::renderUI({
       res <- result()
-      diff_label <- if (isTRUE(input$paired)) {
-        "Mean of the differences"
-      } else {
-        "Difference in means"
-      }
-      estimate <- if (isTRUE(input$paired)) {
-        unname(res$estimate)
-      } else {
-        unname(res$estimate[1] - res$estimate[2])
-      }
+      diff_label <- "Difference in means"
+      estimate <- unname(res$estimate[1] - res$estimate[2])
       keys <- c(
         "Test", diff_label,
         glue::glue("{round(conf_level() * 100)}% confidence interval"),
@@ -230,14 +202,13 @@ mod_ttest2_server <- function(id, data,
     output$assumptions <- shiny::renderUI({
       pd <- pair_data()
       shiny::req(length(problems()) == 0)
-      checks <- list(check_normality(pd))
-      if (!isTRUE(input$paired)) {
-        checks <- c(
-          checks,
-          list(check_variance(pd, welch_used = !isTRUE(input$var_equal)))
-        )
-      }
-      checks <- c(checks, list(check_outliers(pd), check_independence()))
+      checks <- list(
+        check_normality(pd),
+        check_variance(pd,
+          welch_used = !isTRUE(input$var_equal)),
+        check_outliers(pd),
+        check_independence()
+      )
       return(shiny::tagList(lapply(checks, check_block)))
     })
 
@@ -252,13 +223,6 @@ mod_ttest2_server <- function(id, data,
       title <- label_or(input$plot_title, NULL)
       xlab <- label_or(input$plot_xlab, labs$group)
       ylab <- label_or(input$plot_ylab, labs$value)
-      if (isTRUE(input$paired)) {
-        paired_long <- pd |>
-          dplyr::group_by(.data$group) |>
-          dplyr::mutate(pair_id = dplyr::row_number()) |>
-          dplyr::ungroup()
-        return(plot_paired(paired_long, title, xlab, ylab))
-      }
       return(plot_groups(
         pd, style = input$plot_style %||% "box",
         title = title, xlab = xlab, ylab = ylab
@@ -277,15 +241,6 @@ mod_ttest2_server <- function(id, data,
     code_text <- shiny::reactive({
       labs <- data$labels()
       shiny::req(labs)
-      if (isTRUE(input$paired)) {
-        return(glue::glue(
-          "t.test({labs$value} ~ {labs$group},\n",
-          "       data = my_data,\n",
-          "       paired = TRUE,\n",
-          '       alternative = "{input$alt}",\n',
-          "       conf.level = {conf_level()})"
-        ))
-      }
       return(glue::glue(
         "t.test({labs$value} ~ {labs$group},\n",
         "       data = my_data,\n",

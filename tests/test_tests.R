@@ -73,11 +73,6 @@ testServer(mod_ttest2_server,
   session$setInputs(alt = "two.sided", g2 = lv[1])
   ok("identical groups blocked",
      any(grepl("different groups", problems())))
-
-  # unequal n + paired must be caught
-  session$setInputs(g2 = lv[2], paired = TRUE)
-  ok("unequal-n paired blocked",
-     any(grepl("same number", problems())))
 })
 
 # ---- two-sample: ANOVA data has 3 groups, picks 2 -------------------
