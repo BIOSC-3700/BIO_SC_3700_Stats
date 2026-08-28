@@ -81,10 +81,12 @@ mod_data_ui <- function(id) {
     bslib::layout_columns(
       col_widths = c(6, 6),
       bslib::card(
-        bslib::card_header("Data as the app read it"),
+        min_height = "500px",
+        bslib::card_header("Current Data"),
         DT::DTOutput(ns("preview"))
       ),
       bslib::card(
+        min_height = "500px",
         bslib::card_header("Summary by group"),
         shiny::div(class = "table-scroll", shiny::tableOutput(ns("summary")))
       )
