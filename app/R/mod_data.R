@@ -11,11 +11,11 @@
 # often, so the app states its inference and lets them override it.
 
 example_files <- c(
-  "Horned lizard horn length — 2 groups" = "horned_lizards.csv",
-  "Jet lag and knees — 3 light treatments" = "jetlag_knees.csv",
-  "Blackbird antibodies — paired before/after" = "blackbird_antibodies.csv",
-  "Lion nose coloration — age vs. proportion black" = "lion_noses.csv",
-  "Intertidal algae — height × herbivores, factorial" = "intertidal_algae.csv"
+  "Horned lizard horn length — 2 independent groups" = "horned_lizards.csv",
+  "Jet lag and knees — 3 independent light treatments" = "jetlag_knees.csv",
+  "Blackbird antibodies — paired before/after measurements" = "blackbird_antibodies.csv",
+  "Lion nose coloration — 2 continuous variables" = "lion_noses.csv",
+  "Intertidal algae — height X herbivores, factorial data" = "intertidal_algae.csv"
 )
 
 
