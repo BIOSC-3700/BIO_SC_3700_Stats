@@ -11,7 +11,8 @@ mod_ttest1_ui <- function(id) {
     sidebar = bslib::sidebar(
       width = 360,
       shiny::radioButtons(
-        ns("mode"), "What are you testing?",
+        ns("mode"),
+        "What are you testing?",
         choices = c(
           "One group against a fixed value" = "single",
           "The difference between two columns" = "diff"
@@ -30,15 +31,18 @@ mod_ttest1_ui <- function(id) {
   return(out)
 }
 
-mod_ttest1_server <- function(id, data,
-                              show_plots = TRUE) {
+mod_ttest1_server <- function(id, data, show_plots = TRUE) {
   shiny::moduleServer(id, function(input, output, session) {
     ns <- session$ns
 
     confirmed <- shiny::reactiveVal(FALSE)
-    shiny::observeEvent(data$raw(), {
-      confirmed(FALSE)
-    }, ignoreInit = TRUE)
+    shiny::observeEvent(
+      data$raw(),
+      {
+        confirmed(FALSE)
+      },
+      ignoreInit = TRUE
+    )
     shiny::observeEvent(input$run_analysis, {
       confirmed(TRUE)
     })
@@ -55,37 +59,49 @@ mod_ttest1_server <- function(id, data,
       if (identical(input$mode, "diff")) {
         cols <- numeric_columns()
         if (length(cols) < 2) {
-          return(shiny::p(class = "hint", paste(
-            "This mode needs two numeric columns in your data, for",
-            "example a 'before' column and an 'after' column."
-          )))
+          return(shiny::p(
+            class = "hint",
+            paste(
+              "This mode needs two numeric columns in your data, for",
+              "example a 'before' column and an 'after' column."
+            )
+          ))
         }
         return(shiny::tagList(
           shiny::selectInput(
-            ns("col1"), "Subtract this column", choices = cols,
+            ns("col1"),
+            "Subtract this column",
+            choices = cols,
             selected = cols[2]
           ),
           shiny::selectInput(
-            ns("col2"), "From this column", choices = cols,
+            ns("col2"),
+            "From this column",
+            choices = cols,
             selected = cols[1]
           ),
-          shiny::p(class = "hint", paste(
-            "Rows are paired top to bottom, so each row must be the",
-            "same subject measured twice."
-          )),
+          shiny::p(
+            class = "hint",
+            paste(
+              "Rows are paired top to bottom, so each row must be the",
+              "same subject measured twice."
+            )
+          ),
           common_controls(ns, mu_label = "Hypothesized difference (μ₀)")
         ))
       }
       tidy <- data$tidy()
       if (is.null(tidy)) {
         return(shiny::p(
-          class = "hint", "Load your measurements on the Data tab."
+          class = "hint",
+          "Load your measurements on the Data tab."
         ))
       }
       groups <- levels(tidy$group)
       return(shiny::tagList(
         shiny::selectInput(
-          ns("group"), "Which group?",
+          ns("group"),
+          "Which group?",
           choices = c("All data combined" = "__all__", groups),
           selected = if (length(groups) == 1) groups[1] else "__all__"
         ),
@@ -129,7 +145,8 @@ mod_ttest1_server <- function(id, data,
       }
       shiny::req(chosen %in% levels(tidy$group))
       return(list(
-        values = tidy$value[tidy$group == chosen], label = chosen
+        values = tidy$value[tidy$group == chosen],
+        label = chosen
       ))
     })
 
@@ -162,17 +179,23 @@ mod_ttest1_server <- function(id, data,
       }
       values <- sample_values()$values
       if (length(values) < 2) {
-        out <- c(out, glue::glue(
-          "A t-test needs at least 2 values, but this selection has ",
-          "{length(values)}."
-        ))
+        out <- c(
+          out,
+          glue::glue(
+            "A t-test needs at least 2 values, but this selection has ",
+            "{length(values)}."
+          )
+        )
         return(out)
       }
       if (stats::var(values) == 0) {
-        out <- c(out, paste(
-          "Every value in this selection is identical, so there is no",
-          "variation to test against."
-        ))
+        out <- c(
+          out,
+          paste(
+            "Every value in this selection is identical, so there is no",
+            "variation to test against."
+          )
+        )
       }
       return(out)
     })
@@ -180,7 +203,8 @@ mod_ttest1_server <- function(id, data,
     result <- shiny::reactive({
       shiny::req(length(problems()) == 0)
       out <- stats::t.test(
-        sample_values()$values, mu = mu0(),
+        sample_values()$values,
+        mu = mu0(),
         alternative = input$alt %||% "two.sided",
         conf.level = conf_level()
       )
@@ -203,10 +227,15 @@ mod_ttest1_server <- function(id, data,
       res <- result()
       values <- sample_values()$values
       keys <- c(
-        "n", "Sample mean", "Standard deviation", "Standard error",
+        "n",
+        "Sample mean",
+        "Standard deviation",
+        "Standard error",
         "Hypothesized mean (μ₀)",
         glue::glue("{round(conf_level() * 100)}% confidence interval"),
-        "t statistic", "Degrees of freedom", "p-value"
+        "t statistic",
+        "Degrees of freedom",
+        "p-value"
       )
       display <- c(
         as.character(length(values)),
@@ -249,9 +278,13 @@ mod_ttest1_server <- function(id, data,
       }
       xlab <- label_or(input$plot_xlab, default_x)
       return(plot_one_sample(
-        values = sample$values, mu0 = mu0(),
-        ci_low = res$conf.int[1], ci_high = res$conf.int[2],
-        mean_val = unname(res$estimate), title = title, xlab = xlab,
+        values = sample$values,
+        mu0 = mu0(),
+        ci_low = res$conf.int[1],
+        ci_high = res$conf.int[2],
+        mean_val = unname(res$estimate),
+        title = title,
+        xlab = xlab,
         conf_level = conf_level()
       ))
     })
@@ -262,7 +295,8 @@ mod_ttest1_server <- function(id, data,
     })
 
     output$download_plot <- plot_download_handler(
-      the_plot, "one-sample-t"
+      the_plot,
+      "one-sample-t"
     )
 
     code_text <- shiny::reactive({
@@ -312,11 +346,13 @@ mod_ttest1_server <- function(id, data,
             "hypothesized value."
           ))
         ),
-        ns = ns, confirmed = confirmed()
+        ns = ns,
+        confirmed = confirmed()
       )
       if (is.null(data$raw())) {
         return(shiny::tagList(
-          intro, no_data_panel("a one-sample t-test")
+          intro,
+          no_data_panel("a one-sample t-test")
         ))
       }
       if (!confirmed()) {
@@ -325,7 +361,8 @@ mod_ttest1_server <- function(id, data,
       probs <- problems()
       if (length(probs) > 0) {
         return(shiny::tagList(
-          intro, cannot_run_panel(probs)
+          intro,
+          cannot_run_panel(probs)
         ))
       }
       plot_card <- if (show_plots) {
@@ -367,7 +404,8 @@ common_controls <- function(ns, mu_label) {
   out <- shiny::tagList(
     shiny::numericInput(ns("mu"), mu_label, value = 0, step = 0.1),
     shiny::selectInput(
-      ns("alt"), "Alternative hypothesis",
+      ns("alt"),
+      "Alternative hypothesis",
       choices = c(
         "The mean differs from μ₀ (two-sided)" = "two.sided",
         "The mean is smaller than μ₀" = "less",
@@ -376,8 +414,12 @@ common_controls <- function(ns, mu_label) {
       selected = "two.sided"
     ),
     shiny::numericInput(
-      ns("conf"), "Confidence level", value = 0.95,
-      min = 0.5, max = 0.999, step = 0.01
+      ns("conf"),
+      "Confidence level",
+      value = 0.95,
+      min = 0.5,
+      max = 0.999,
+      step = 0.01
     )
   )
   return(out)

@@ -22,15 +22,18 @@ mod_ttest2_ui <- function(id) {
   return(out)
 }
 
-mod_ttest2_server <- function(id, data,
-                              show_plots = TRUE) {
+mod_ttest2_server <- function(id, data, show_plots = TRUE) {
   shiny::moduleServer(id, function(input, output, session) {
     ns <- session$ns
 
     confirmed <- shiny::reactiveVal(FALSE)
-    shiny::observeEvent(data$tidy(), {
-      confirmed(FALSE)
-    }, ignoreInit = TRUE)
+    shiny::observeEvent(
+      data$tidy(),
+      {
+        confirmed(FALSE)
+      },
+      ignoreInit = TRUE
+    )
     shiny::observeEvent(input$run_analysis, {
       confirmed(TRUE)
     })
@@ -53,13 +56,21 @@ mod_ttest2_server <- function(id, data,
       }
       return(shiny::tagList(
         shiny::selectInput(
-          ns("g1"), "First group", choices = groups, selected = groups[1]
+          ns("g1"),
+          "First group",
+          choices = groups,
+          selected = groups[1]
         ),
         shiny::selectInput(
-          ns("g2"), "Second group", choices = groups, selected = groups[2]
+          ns("g2"),
+          "Second group",
+          choices = groups,
+          selected = groups[2]
         ),
         shiny::checkboxInput(
-          ns("var_equal"), "Assume equal variances", value = FALSE
+          ns("var_equal"),
+          "Assume equal variances",
+          value = FALSE
         ),
         shiny::p(
           class = "hint",
@@ -67,7 +78,8 @@ mod_ttest2_server <- function(id, data,
           "The default is Welch's t-test, which does not require them."
         ),
         shiny::selectInput(
-          ns("alt"), "Alternative hypothesis",
+          ns("alt"),
+          "Alternative hypothesis",
           choices = c(
             "The means differ (two-sided)" = "two.sided",
             "First group is smaller" = "less",
@@ -76,8 +88,12 @@ mod_ttest2_server <- function(id, data,
           selected = "two.sided"
         ),
         shiny::numericInput(
-          ns("conf"), "Confidence level", value = 0.95,
-          min = 0.5, max = 0.999, step = 0.01
+          ns("conf"),
+          "Confidence level",
+          value = 0.95,
+          min = 0.5,
+          max = 0.999,
+          step = 0.01
         )
       ))
     })
@@ -109,10 +125,13 @@ mod_ttest2_server <- function(id, data,
       }
       out <- character(0)
       if (nlevels(tidy$group) < 2) {
-        out <- c(out, paste(
-          "A two-sample t-test needs two groups. This data has only",
-          "one. Use the one-sample tab instead."
-        ))
+        out <- c(
+          out,
+          paste(
+            "A two-sample t-test needs two groups. This data has only",
+            "one. Use the one-sample tab instead."
+          )
+        )
         return(out)
       }
       if (is.null(input$g1) || is.null(input$g2)) {
@@ -125,10 +144,13 @@ mod_ttest2_server <- function(id, data,
       counts <- table(pair_data()$group)
       thin <- names(counts)[counts < 2]
       if (length(thin) > 0) {
-        out <- c(out, glue::glue(
-          "Each group needs at least 2 values. Too few in: ",
-          "{paste(thin, collapse = ', ')}."
-        ))
+        out <- c(
+          out,
+          glue::glue(
+            "Each group needs at least 2 values. Too few in: ",
+            "{paste(thin, collapse = ', ')}."
+          )
+        )
       }
       return(out)
     })
@@ -139,7 +161,9 @@ mod_ttest2_server <- function(id, data,
       x <- pd$value[pd$group == input$g1]
       y <- pd$value[pd$group == input$g2]
       out <- stats::t.test(
-        x, y, paired = FALSE,
+        x,
+        y,
+        paired = FALSE,
         var.equal = isTRUE(input$var_equal),
         alternative = input$alt,
         conf.level = conf_level()
@@ -177,9 +201,12 @@ mod_ttest2_server <- function(id, data,
       diff_label <- "Difference in means"
       estimate <- unname(res$estimate[1] - res$estimate[2])
       keys <- c(
-        "Test", diff_label,
+        "Test",
+        diff_label,
         glue::glue("{round(conf_level() * 100)}% confidence interval"),
-        "t statistic", "Degrees of freedom", "p-value"
+        "t statistic",
+        "Degrees of freedom",
+        "p-value"
       )
       values <- c(
         test_name(),
@@ -196,7 +223,9 @@ mod_ttest2_server <- function(id, data,
       {
         summary_table(group_summary(pair_data()), compact = TRUE)
       },
-      striped = TRUE, spacing = "xs", align = "lrrrr"
+      striped = TRUE,
+      spacing = "xs",
+      align = "lrrrr"
     )
 
     output$assumptions <- shiny::renderUI({
@@ -204,8 +233,7 @@ mod_ttest2_server <- function(id, data,
       shiny::req(length(problems()) == 0)
       checks <- list(
         check_normality(pd),
-        check_variance(pd,
-          welch_used = !isTRUE(input$var_equal)),
+        check_variance(pd, welch_used = !isTRUE(input$var_equal)),
         check_outliers(pd),
         check_independence()
       )
@@ -224,8 +252,11 @@ mod_ttest2_server <- function(id, data,
       xlab <- label_or(input$plot_xlab, labs$group)
       ylab <- label_or(input$plot_ylab, labs$value)
       return(plot_groups(
-        pd, style = input$plot_style %||% "box",
-        title = title, xlab = xlab, ylab = ylab
+        pd,
+        style = input$plot_style %||% "box",
+        title = title,
+        xlab = xlab,
+        ylab = ylab
       ))
     })
 
@@ -235,7 +266,8 @@ mod_ttest2_server <- function(id, data,
     })
 
     output$download_plot <- plot_download_handler(
-      the_plot, "two-sample-t"
+      the_plot,
+      "two-sample-t"
     )
 
     code_text <- shiny::reactive({
@@ -274,11 +306,13 @@ mod_ttest2_server <- function(id, data,
             "the two population means differ."
           ))
         ),
-        ns = ns, confirmed = confirmed()
+        ns = ns,
+        confirmed = confirmed()
       )
       if (is.null(data$tidy())) {
         return(shiny::tagList(
-          intro, no_data_panel("a two-sample t-test")
+          intro,
+          no_data_panel("a two-sample t-test")
         ))
       }
       if (!confirmed()) {
@@ -287,7 +321,8 @@ mod_ttest2_server <- function(id, data,
       probs <- problems()
       if (length(probs) > 0) {
         return(shiny::tagList(
-          intro, cannot_run_panel(probs)
+          intro,
+          cannot_run_panel(probs)
         ))
       }
       plot_card <- if (show_plots) {
@@ -306,8 +341,10 @@ mod_ttest2_server <- function(id, data,
             bslib::card_header("Result"),
             shiny::uiOutput(ns("stats")),
             shiny::tags$h6("Group summary"),
-            shiny::div(class = "table-scroll",
-                       shiny::tableOutput(ns("summary")))
+            shiny::div(
+              class = "table-scroll",
+              shiny::tableOutput(ns("summary"))
+            )
           ),
           plot_card
         ),

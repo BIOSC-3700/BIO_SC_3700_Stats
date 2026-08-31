@@ -3,8 +3,7 @@
 # detail string, and optionally a table to display.
 #
 # Levene's test is implemented here rather than pulled from car: it is
-# a one-way ANOVA on absolute deviations from the group medians, which
-# is ten lines and saves a package download in the browser.
+# a one-way ANOVA on absolute deviations from the group medians.
 
 levene_test <- function(value, group) {
   keep <- !is.na(value) & !is.na(group)
@@ -37,18 +36,26 @@ shapiro_by_group <- function(data) {
     n <- length(x)
     if (n < 3 || n > 5000 || stats::var(x) == 0) {
       return(tibble::tibble(
-        group = g, n = n, W = NA_real_, p = NA_real_
+        group = g,
+        n = n,
+        W = NA_real_,
+        p = NA_real_
       ))
     }
     res <- try(stats::shapiro.test(x), silent = TRUE)
     if (inherits(res, "try-error")) {
       return(tibble::tibble(
-        group = g, n = n, W = NA_real_, p = NA_real_
+        group = g,
+        n = n,
+        W = NA_real_,
+        p = NA_real_
       ))
     }
     return(tibble::tibble(
-      group = g, n = n,
-      W = unname(res$statistic), p = res$p.value
+      group = g,
+      n = n,
+      W = unname(res$statistic),
+      p = res$p.value
     ))
   })
   return(dplyr::bind_rows(rows))
@@ -236,9 +243,10 @@ outlier_flags <- function(data) {
       .q1 = stats::quantile(.data$value, 0.25, na.rm = TRUE),
       .q3 = stats::quantile(.data$value, 0.75, na.rm = TRUE),
       .iqr = .data$.q3 - .data$.q1,
-      is_outlier = !is.na(.data$value) & .data$.iqr > 0 &
+      is_outlier = !is.na(.data$value) &
+        .data$.iqr > 0 &
         (.data$value < .data$.q1 - 1.5 * .data$.iqr |
-           .data$value > .data$.q3 + 1.5 * .data$.iqr)
+          .data$value > .data$.q3 + 1.5 * .data$.iqr)
     ) |>
     dplyr::ungroup() |>
     dplyr::select(-".q1", -".q3", -".iqr")

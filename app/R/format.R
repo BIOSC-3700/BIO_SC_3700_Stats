@@ -6,32 +6,33 @@
   return(if (is.null(x)) y else x)
 }
 
-# Chart and badge palette. Validated with the dataviz palette checker
-# against a white surface: accent vs. outlier-flag clears every gate;
-# accent vs. muted is the "highlight one, gray the rest" emphasis
-# pattern, backed by direct labels wherever it carries meaning.
+# Chart and badge palette.
 pal <- list(
-  accent    = "#2a78d6",
-  muted     = "#898781",
-  critical  = "#d03b3b",
-  warning   = "#fab219",
-  good      = "#0ca30c",
-  ink       = "#0b0b0b",
-  ink2      = "#52514e",
-  grid      = "#e1e0d9",
-  axis      = "#c3c2b7",
-  surface   = "#ffffff",
+  accent = "#2a78d6",
+  muted = "#898781",
+  critical = "#d03b3b",
+  warning = "#fab219",
+  good = "#0ca30c",
+  ink = "#0b0b0b",
+  ink2 = "#52514e",
+  grid = "#e1e0d9",
+  axis = "#c3c2b7",
+  surface = "#ffffff",
+
   # Categorical slots, used only where color carries identity rather
   # than emphasis -- currently just the two-way interaction plot, where
-  # each line is a level of a factor. The order is the validated one;
-  # do not reorder. Only the first three clear the all-pairs gates
-  # (slot 4 puts yellow beside orange at normal-vision dE 13.7), so
-  # past three levels the plot must also carry shape and direct
-  # labels, which plot_interaction() does unconditionally.
+  # each line is a level of a factor.
   categorical = c(
-    "#2a78d6", "#eb6834", "#1baf7a", "#eda100",
-    "#e87ba4", "#008300", "#4a3aa7", "#e34948"
+    "#2a78d6",
+    "#eb6834",
+    "#1baf7a",
+    "#eda100",
+    "#e87ba4",
+    "#008300",
+    "#4a3aa7",
+    "#e34948"
   ),
+
   # Point shapes pair with the categorical slots so identity survives
   # a colorblind reader or a grayscale printout.
   shapes = c(16, 17, 15, 18, 8, 7, 10, 4)
@@ -85,8 +86,11 @@ fmt_ci <- function(lo, hi, digits = 3) {
 # "p = 0.003" or "p < 0.0001", ready to drop into a sentence.
 fmt_p_inline <- function(p, digits = 4) {
   txt <- fmt_p(p, digits)
-  return(ifelse(startsWith(txt, "<"), glue::glue("p {txt}"),
-                glue::glue("p = {txt}")))
+  return(ifelse(
+    startsWith(txt, "<"),
+    glue::glue("p {txt}"),
+    glue::glue("p = {txt}")
+  ))
 }
 
 # Significance wording. Deliberately avoids "proves" and "no

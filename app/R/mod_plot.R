@@ -11,7 +11,8 @@ mod_plot_ui <- function(id) {
     sidebar = bslib::sidebar(
       width = 360,
       shiny::selectInput(
-        ns("type"), "Plot type",
+        ns("type"),
+        "Plot type",
         choices = c(
           "Boxplot" = "box",
           "Bar plot (means \u00b1 SE)" = "bar",
@@ -23,15 +24,18 @@ mod_plot_ui <- function(id) {
       ),
       shiny::hr(),
       shiny::conditionalPanel(
-        "input.type == 'box'", ns = ns,
+        "input.type == 'box'",
+        ns = ns,
         shiny::radioButtons(
-          ns("box_style"), "Style",
+          ns("box_style"),
+          "Style",
           choices = c(
             "Boxplot" = "box",
             "Violin" = "violin",
             "Points only" = "points"
           ),
-          selected = "box", inline = TRUE
+          selected = "box",
+          inline = TRUE
         )
       ),
       shiny::conditionalPanel(
@@ -44,27 +48,39 @@ mod_plot_ui <- function(id) {
         shiny::uiOutput(ns("color_by_ui"))
       ),
       shiny::conditionalPanel(
-        "input.type == 'hist'", ns = ns,
+        "input.type == 'hist'",
+        ns = ns,
         shiny::uiOutput(ns("hist_col_ui")),
         shiny::uiOutput(ns("hist_facet_ui")),
         shiny::numericInput(
-          ns("bins"), "Number of bins",
-          value = 20, min = 5, max = 100, step = 1
+          ns("bins"),
+          "Number of bins",
+          value = 20,
+          min = 5,
+          max = 100,
+          step = 1
         )
       ),
       shiny::conditionalPanel(
-        "input.type == 'scatter'", ns = ns,
+        "input.type == 'scatter'",
+        ns = ns,
         shiny::uiOutput(ns("scatter_col_ui"))
       ),
       shiny::hr(),
       shiny::textInput(
-        ns("plot_title"), "Plot title", value = ""
+        ns("plot_title"),
+        "Plot title",
+        value = ""
       ),
       shiny::textInput(
-        ns("plot_xlab"), "X-axis label", value = ""
+        ns("plot_xlab"),
+        "X-axis label",
+        value = ""
       ),
       shiny::textInput(
-        ns("plot_ylab"), "Y-axis label", value = ""
+        ns("plot_ylab"),
+        "Y-axis label",
+        value = ""
       )
     ),
     shiny::uiOutput(ns("body"))
@@ -82,7 +98,9 @@ mod_plot_server <- function(id, data) {
         return(character(0))
       }
       return(names(raw)[vapply(
-        raw, is.numeric, logical(1)
+        raw,
+        is.numeric,
+        logical(1)
       )])
     })
 
@@ -98,12 +116,16 @@ mod_plot_server <- function(id, data) {
       non_num <- setdiff(all_cols, nums)
 
       if (type == "interaction") {
-        resp_default <- if (
-          !is.null(labs$value) && labs$value %in% nums
-        ) labs$value else nums[1]
-        a_default <- if (
-          !is.null(labs$group) && labs$group %in% all_cols
-        ) labs$group else (non_num[1] %||% all_cols[1])
+        resp_default <- if (!is.null(labs$value) && labs$value %in% nums) {
+          labs$value
+        } else {
+          nums[1]
+        }
+        a_default <- if (!is.null(labs$group) && labs$group %in% all_cols) {
+          labs$group
+        } else {
+          (non_num[1] %||% all_cols[1])
+        }
         b_choices <- setdiff(all_cols, c(a_default))
         b_non_num <- intersect(b_choices, non_num)
         b_default <- if (length(b_non_num) > 0) {
@@ -119,7 +141,8 @@ mod_plot_server <- function(id, data) {
             selected = resp_default
           ),
           shiny::selectInput(
-            ns("interact_x"), "X-axis variable",
+            ns("interact_x"),
+            "X-axis variable",
             choices = all_cols,
             selected = a_default
           ),
@@ -131,7 +154,8 @@ mod_plot_server <- function(id, data) {
           ),
           shiny::textInput(
             ns("color_lab"),
-            "Color variable label", value = ""
+            "Color variable label",
+            value = ""
           )
         ))
       }
@@ -156,13 +180,16 @@ mod_plot_server <- function(id, data) {
         shiny::selectInput(
           ns("color_by"),
           "Color by (second variable)",
-          choices = choices, selected = "__none__"
+          choices = choices,
+          selected = "__none__"
         ),
         shiny::conditionalPanel(
-          "input.color_by != '__none__'", ns = ns,
+          "input.color_by != '__none__'",
+          ns = ns,
           shiny::textInput(
             ns("color_lab"),
-            "Color variable label", value = ""
+            "Color variable label",
+            value = ""
           )
         )
       ))
@@ -235,8 +262,10 @@ mod_plot_server <- function(id, data) {
         stats::setNames(cols, cols)
       )
       return(shiny::selectInput(
-        ns("hist_col"), "Column to plot",
-        choices = choices, selected = "__tidy__"
+        ns("hist_col"),
+        "Column to plot",
+        choices = choices,
+        selected = "__tidy__"
       ))
     })
 
@@ -256,8 +285,10 @@ mod_plot_server <- function(id, data) {
         stats::setNames(candidates, candidates)
       )
       return(shiny::selectInput(
-        ns("hist_facet"), "Facet by",
-        choices = choices, selected = "__none__"
+        ns("hist_facet"),
+        "Facet by",
+        choices = choices,
+        selected = "__none__"
       ))
     })
 
@@ -274,11 +305,14 @@ mod_plot_server <- function(id, data) {
       }
       return(shiny::tagList(
         shiny::selectInput(
-          ns("scatter_x"), "X column",
-          choices = cols, selected = cols[1]
+          ns("scatter_x"),
+          "X column",
+          choices = cols,
+          selected = cols[1]
         ),
         shiny::selectInput(
-          ns("scatter_y"), "Y column",
+          ns("scatter_y"),
+          "Y column",
           choices = cols,
           selected = cols[min(2, length(cols))]
         )
@@ -299,8 +333,10 @@ mod_plot_server <- function(id, data) {
         }
         if (has_color_var()) {
           b_col <- input$color_by
-          if (is.null(b_col) ||
-              identical(b_col, "__none__")) {
+          if (
+            is.null(b_col) ||
+              identical(b_col, "__none__")
+          ) {
             return(character(0))
           }
           cd <- cells()
@@ -315,9 +351,12 @@ mod_plot_server <- function(id, data) {
           }
           if (nlevels(cd$b) > length(pal$categorical)) {
             return(paste0(
-              b_col, " has ", nlevels(cd$b),
+              b_col,
+              " has ",
+              nlevels(cd$b),
               " levels; the palette supports at most ",
-              length(pal$categorical), "."
+              length(pal$categorical),
+              "."
             ))
           }
         }
@@ -329,8 +368,7 @@ mod_plot_server <- function(id, data) {
         resp <- input$interact_response
         a_col <- input$interact_x
         b_col <- input$interact_color
-        if (is.null(resp) || is.null(a_col) ||
-            is.null(b_col)) {
+        if (is.null(resp) || is.null(a_col) || is.null(b_col)) {
           return(character(0))
         }
         chosen <- c(resp, a_col, b_col)
@@ -346,19 +384,24 @@ mod_plot_server <- function(id, data) {
         }
         if (nlevels(cd$a) < 2) {
           return(paste(
-            a_col, "needs at least 2 levels."
+            a_col,
+            "needs at least 2 levels."
           ))
         }
         if (nlevels(cd$b) < 2) {
           return(paste(
-            b_col, "needs at least 2 levels."
+            b_col,
+            "needs at least 2 levels."
           ))
         }
         if (nlevels(cd$b) > length(pal$categorical)) {
           return(paste0(
-            b_col, " has ", nlevels(cd$b),
+            b_col,
+            " has ",
+            nlevels(cd$b),
             " levels; the palette supports at most ",
-            length(pal$categorical), "."
+            length(pal$categorical),
+            "."
           ))
         }
       }
@@ -413,7 +456,8 @@ mod_plot_server <- function(id, data) {
           cd <- cells()
           color_col <- input$color_by
           color_label <- label_or(
-            input$color_lab, color_col
+            input$color_lab,
+            color_col
           )
           return(plot_grouped_boxes(
             cd,
@@ -439,7 +483,8 @@ mod_plot_server <- function(id, data) {
           cd <- cells()
           color_col <- input$color_by
           color_label <- label_or(
-            input$color_lab, color_col
+            input$color_lab,
+            color_col
           )
           return(plot_grouped_bar(
             cd,
@@ -451,7 +496,8 @@ mod_plot_server <- function(id, data) {
         }
         tidy <- data$tidy()
         return(plot_bar(
-          tidy, title = title,
+          tidy,
+          title = title,
           xlab = label_or(xlab_in, labs$group),
           ylab = label_or(ylab_in, labs$value)
         ))
@@ -463,7 +509,8 @@ mod_plot_server <- function(id, data) {
         b_col <- input$interact_color
         resp <- input$interact_response
         color_label <- label_or(
-          input$color_lab, b_col
+          input$color_lab,
+          b_col
         )
         return(plot_interaction(
           cd,
@@ -479,18 +526,22 @@ mod_plot_server <- function(id, data) {
         bins <- input$bins %||% 20
         bins <- max(5, min(100, bins))
         facet <- input$hist_facet %||% "__none__"
-        if (!identical(facet, "__none__") &&
-            facet %in% names(data$raw())) {
+        if (
+          !identical(facet, "__none__") &&
+            facet %in% names(data$raw())
+        ) {
           return(plot_faceted_histogram(
             data$raw(),
             value_col = hv$label,
             facet_col = facet,
-            bins = bins, title = title,
+            bins = bins,
+            title = title,
             xlab = label_or(xlab_in, hv$label)
           ))
         }
         return(plot_histogram(
-          hv$values, bins = bins,
+          hv$values,
+          bins = bins,
           title = title,
           xlab = label_or(xlab_in, hv$label)
         ))
@@ -506,7 +557,9 @@ mod_plot_server <- function(id, data) {
           y_col %in% names(raw)
         )
         return(plot_scatter(
-          raw, x_col, y_col,
+          raw,
+          x_col,
+          y_col,
           title = title,
           xlab = label_or(xlab_in, x_col),
           ylab = label_or(ylab_in, y_col)
@@ -519,7 +572,8 @@ mod_plot_server <- function(id, data) {
     })
 
     output$download_plot <- plot_download_handler(
-      the_plot, "plot"
+      the_plot,
+      "plot"
     )
 
     # ---- code text ----
@@ -536,7 +590,8 @@ mod_plot_server <- function(id, data) {
         if (has_color_var()) {
           color_col <- input$color_by
           style <- input$box_style %||% "box"
-          geom <- switch(style,
+          geom <- switch(
+            style,
             box = glue::glue(
               "geom_boxplot(",
               "aes(fill = {color_col}))"

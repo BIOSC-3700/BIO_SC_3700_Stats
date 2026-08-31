@@ -5,10 +5,6 @@
 #   raw()   the table exactly as loaded, or NULL
 #   tidy()  tibble(value = numeric, group = factor) with NA dropped
 #   info()  counts and warnings from parsing, for the alert panel
-#
-# Layout is asked, not guessed. Which column holds the measurement and
-# which holds the group is the single thing students get wrong most
-# often, so the app states its inference and lets them override it.
 
 example_files <- c(
   "Horned lizard horn length — 2 independent groups" = "horned_lizards.csv",

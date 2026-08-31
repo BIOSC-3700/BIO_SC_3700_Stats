@@ -2,8 +2,8 @@
 #
 # When Levene's test flags unequal variances the tab additionally
 # reports Welch's ANOVA (stats::oneway.test) and says which of the two
-# to read, rather than leaving a student with a result whose
-# assumptions it has just told them are violated.
+# to read, rather than leaving a result whose assumptions it has just
+# told are violated.
 
 mod_anova_ui <- function(id) {
   ns <- shiny::NS(id)
@@ -22,15 +22,18 @@ mod_anova_ui <- function(id) {
   return(out)
 }
 
-mod_anova_server <- function(id, data,
-                             show_plots = TRUE) {
+mod_anova_server <- function(id, data, show_plots = TRUE) {
   shiny::moduleServer(id, function(input, output, session) {
     ns <- session$ns
 
     confirmed <- shiny::reactiveVal(FALSE)
-    shiny::observeEvent(data$tidy(), {
-      confirmed(FALSE)
-    }, ignoreInit = TRUE)
+    shiny::observeEvent(
+      data$tidy(),
+      {
+        confirmed(FALSE)
+      },
+      ignoreInit = TRUE
+    )
     shiny::observeEvent(input$run_analysis, {
       confirmed(TRUE)
     })
@@ -39,24 +42,37 @@ mod_anova_server <- function(id, data,
       tidy <- data$tidy()
       if (is.null(tidy)) {
         return(shiny::p(
-          class = "hint", "Load your measurements on the Data tab."
+          class = "hint",
+          "Load your measurements on the Data tab."
         ))
       }
       return(shiny::tagList(
-        shiny::p(class = "hint", glue::glue(
-          "Comparing {nlevels(tidy$group)} groups: ",
-          "{paste(levels(tidy$group), collapse = ', ')}."
-        )),
-        shiny::checkboxInput(
-          ns("tukey"), "Run Tukey's HSD post-hoc test", value = TRUE
+        shiny::p(
+          class = "hint",
+          glue::glue(
+            "Comparing {nlevels(tidy$group)} groups: ",
+            "{paste(levels(tidy$group), collapse = ', ')}."
+          )
         ),
-        shiny::p(class = "hint", paste(
-          "Tukey tells you which pairs of groups differ. It only makes",
-          "sense to look at it when the overall ANOVA is significant."
-        )),
+        shiny::checkboxInput(
+          ns("tukey"),
+          "Run Tukey's HSD post-hoc test",
+          value = TRUE
+        ),
+        shiny::p(
+          class = "hint",
+          paste(
+            "Tukey tells you which pairs of groups differ. It only makes",
+            "sense to look at it when the overall ANOVA is significant."
+          )
+        ),
         shiny::numericInput(
-          ns("conf"), "Confidence level", value = 0.95,
-          min = 0.5, max = 0.999, step = 0.01
+          ns("conf"),
+          "Confidence level",
+          value = 0.95,
+          min = 0.5,
+          max = 0.999,
+          step = 0.01
         )
       ))
     })
@@ -77,20 +93,26 @@ mod_anova_server <- function(id, data,
       out <- character(0)
       n_groups <- nlevels(tidy$group)
       if (n_groups < 3) {
-        out <- c(out, glue::glue(
-          "ANOVA compares three or more groups, but this data has ",
-          "{n_groups}. With two groups, use the two-sample t-test tab ",
-          "instead — for two groups the two tests are equivalent."
-        ))
+        out <- c(
+          out,
+          glue::glue(
+            "ANOVA compares three or more groups, but this data has ",
+            "{n_groups}. With two groups, use the two-sample t-test tab ",
+            "instead — for two groups the two tests are equivalent."
+          )
+        )
         return(out)
       }
       counts <- table(tidy$group)
       thin <- names(counts)[counts < 2]
       if (length(thin) > 0) {
-        out <- c(out, glue::glue(
-          "Every group needs at least 2 values. Too few in: ",
-          "{paste(thin, collapse = ', ')}."
-        ))
+        out <- c(
+          out,
+          glue::glue(
+            "Every group needs at least 2 values. Too few in: ",
+            "{paste(thin, collapse = ', ')}."
+          )
+        )
       }
       return(out)
     })
@@ -104,8 +126,11 @@ mod_anova_server <- function(id, data,
     anova_row <- shiny::reactive({
       tab <- summary(fit())[[1]]
       return(list(
-        df1 = tab[1, "Df"], df2 = tab[2, "Df"],
-        f = tab[1, "F value"], p = tab[1, "Pr(>F)"], table = tab
+        df1 = tab[1, "Df"],
+        df2 = tab[2, "Df"],
+        f = tab[1, "F value"],
+        p = tab[1, "Pr(>F)"],
+        table = tab
       ))
     })
 
@@ -116,8 +141,11 @@ mod_anova_server <- function(id, data,
     welch_result <- shiny::reactive({
       shiny::req(length(problems()) == 0)
       out <- try(
-        stats::oneway.test(value ~ group, data = data$tidy(),
-                           var.equal = FALSE),
+        stats::oneway.test(
+          value ~ group,
+          data = data$tidy(),
+          var.equal = FALSE
+        ),
         silent = TRUE
       )
       if (inherits(out, "try-error")) {
@@ -138,7 +166,9 @@ mod_anova_server <- function(id, data,
       pairs <- utils::combn(levels(tidy$group), 2)
       out <- tibble::tibble(
         comparison = paste(pairs[2, ], "−", pairs[1, ]),
-        diff = raw$diff, lwr = raw$lwr, upr = raw$upr,
+        diff = raw$diff,
+        lwr = raw$lwr,
+        upr = raw$upr,
         p_adj = raw[["p adj"]]
       )
       return(out)
@@ -169,7 +199,9 @@ mod_anova_server <- function(id, data,
         )
         return(out)
       },
-      striped = TRUE, spacing = "xs", align = "lrrrrr"
+      striped = TRUE,
+      spacing = "xs",
+      align = "lrrrrr"
     )
 
     output$welch <- shiny::renderUI({
@@ -199,7 +231,9 @@ mod_anova_server <- function(id, data,
       {
         summary_table(group_summary(data$tidy()), compact = TRUE)
       },
-      striped = TRUE, spacing = "xs", align = "lrrrr"
+      striped = TRUE,
+      spacing = "xs",
+      align = "lrrrr"
     )
 
     output$tukey_table <- shiny::renderTable(
@@ -212,12 +246,16 @@ mod_anova_server <- function(id, data,
           Upper = fmt_num(tk$upr),
           `Adjusted p` = fmt_p(tk$p_adj),
           Significant = ifelse(
-            tk$p_adj < 1 - conf_level(), "yes", "no"
+            tk$p_adj < 1 - conf_level(),
+            "yes",
+            "no"
           )
         )
         return(out)
       },
-      striped = TRUE, spacing = "xs", align = "lrrrrc"
+      striped = TRUE,
+      spacing = "xs",
+      align = "lrrrrc"
     )
 
     output$assumptions <- shiny::renderUI({
@@ -244,8 +282,11 @@ mod_anova_server <- function(id, data,
       xlab <- label_or(input$plot_xlab, labs$group)
       ylab <- label_or(input$plot_ylab, labs$value)
       return(plot_groups(
-        tidy, style = input$plot_style %||% "box",
-        title = title, xlab = xlab, ylab = ylab
+        tidy,
+        style = input$plot_style %||% "box",
+        title = title,
+        xlab = xlab,
+        ylab = ylab
       ))
     })
 
@@ -255,8 +296,10 @@ mod_anova_server <- function(id, data,
         "Difference in {label_or(input$plot_ylab, labs$value)}"
       )
       return(plot_tukey(
-        tukey_table(), conf_level = conf_level(),
-        title = NULL, ylab = as.character(ylab)
+        tukey_table(),
+        conf_level = conf_level(),
+        title = NULL,
+        ylab = as.character(ylab)
       ))
     })
 
@@ -271,10 +314,12 @@ mod_anova_server <- function(id, data,
     })
 
     output$download_plot <- plot_download_handler(
-      the_plot, "anova"
+      the_plot,
+      "anova"
     )
     output$download_tukey <- plot_download_handler(
-      the_tukey_plot, "tukey-hsd"
+      the_tukey_plot,
+      "tukey-hsd"
     )
 
     code_text <- shiny::reactive({
@@ -288,10 +333,13 @@ mod_anova_server <- function(id, data,
         "summary(model)"
       )
       if (isTRUE(input$tukey)) {
-        lines <- c(lines, glue::glue(
-          "TukeyHSD(model,",
-          " conf.level = {conf_level()})"
-        ))
+        lines <- c(
+          lines,
+          glue::glue(
+            "TukeyHSD(model,",
+            " conf.level = {conf_level()})"
+          )
+        )
       }
       return(paste(lines, collapse = "\n"))
     })
@@ -319,11 +367,13 @@ mod_anova_server <- function(id, data,
             "from the others."
           ))
         ),
-        ns = ns, confirmed = confirmed()
+        ns = ns,
+        confirmed = confirmed()
       )
       if (is.null(data$tidy())) {
         return(shiny::tagList(
-          intro, no_data_panel("an ANOVA")
+          intro,
+          no_data_panel("an ANOVA")
         ))
       }
       if (!confirmed()) {
@@ -332,7 +382,8 @@ mod_anova_server <- function(id, data,
       probs <- problems()
       if (length(probs) > 0) {
         return(shiny::tagList(
-          intro, cannot_run_panel(probs)
+          intro,
+          cannot_run_panel(probs)
         ))
       }
       tukey_section <- if (isTRUE(input$tukey)) {
@@ -344,7 +395,8 @@ mod_anova_server <- function(id, data,
               shiny::tableOutput(ns("tukey_table"))
             ),
             plot_panel(
-              ns, height = "360px",
+              ns,
+              height = "360px",
               plot_id = "tukey_plot",
               dl_id = "download_tukey"
             )
@@ -379,11 +431,15 @@ mod_anova_server <- function(id, data,
           col_widths = widths,
           bslib::card(
             bslib::card_header("ANOVA table"),
-            shiny::div(class = "table-scroll",
-                       shiny::tableOutput(ns("anova_table"))),
+            shiny::div(
+              class = "table-scroll",
+              shiny::tableOutput(ns("anova_table"))
+            ),
             shiny::tags$h6("Group summary"),
-            shiny::div(class = "table-scroll",
-                       shiny::tableOutput(ns("summary")))
+            shiny::div(
+              class = "table-scroll",
+              shiny::tableOutput(ns("summary"))
+            )
           ),
           plot_card
         ),
