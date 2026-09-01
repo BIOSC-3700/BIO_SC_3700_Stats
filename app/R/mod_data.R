@@ -208,11 +208,12 @@ mod_data_server <- function(id) {
       }
       if (ext == "csv") {
         return(read_attempt(
-          readr::read_csv(path, show_col_types = FALSE, progress = FALSE)
+          read.csv(path, stringsAsFactors = FALSE)
         ))
       }
       return(read_attempt(
-        readr::read_delim(path, show_col_types = FALSE, progress = FALSE)
+        read.table(path, header = TRUE, sep = "\t",
+                   stringsAsFactors = FALSE)
       ))
     })
 
@@ -228,22 +229,22 @@ mod_data_server <- function(id) {
       } else {
         ","
       }
-      return(read_attempt(readr::read_delim(
-        I(txt),
-        delim = delim,
-        show_col_types = FALSE,
-        progress = FALSE,
-        trim_ws = TRUE
-      )))
+      return(read_attempt(
+        read.table(
+          text = txt, header = TRUE, sep = delim,
+          stringsAsFactors = FALSE, strip.white = TRUE
+        )
+      ))
     })
 
     example_result <- shiny::reactive({
       shiny::req(input$example)
-      return(read_attempt(readr::read_csv(
-        fs::path("data", input$example),
-        show_col_types = FALSE,
-        progress = FALSE
-      )))
+      return(read_attempt(
+        read.csv(
+          fs::path("data", input$example),
+          stringsAsFactors = FALSE
+        )
+      ))
     })
 
     raw_result <- shiny::reactive({

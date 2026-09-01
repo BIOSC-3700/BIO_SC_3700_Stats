@@ -50,7 +50,7 @@ jobs:
         shell: Rscript {0}
         run: |
           pkgs <- c("shinylive", "shiny", "bslib", "ggplot2", "dplyr",
-                    "tibble", "readr", "readxl", "DT", "glue", "fs")
+                    "tibble", "readxl", "DT", "glue", "fs")
           missing <- pkgs[!pkgs %in% rownames(installed.packages())]
           if (length(missing) > 0) install.packages(missing)
 
