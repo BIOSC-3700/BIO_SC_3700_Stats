@@ -19,8 +19,6 @@ base_inputs <- function(session, ...) {
   defaults <- list(response = "sqrt.area", fac_a = "height",
     fac_b = "herbivores", tukey = TRUE,
     simple_dir = "a_within_b", conf = 0.95,
-    swap_axes = FALSE, plot_style = "box",
-    plot_title = "", plot_xlab = "", plot_ylab = "",
     run_analysis = 1)
   overrides <- list(...)
   defaults[names(overrides)] <- overrides
@@ -76,18 +74,6 @@ testServer(mod_anova2_server,
   ok("residual normality check runs",
      check_normality_residuals(fit())$status %in%
        c("ok", "warn", "fail", "info"))
-  ok("interaction plot builds",
-     inherits(the_plot(), "ggplot"))
-  ok("grouped box plot builds",
-     inherits(the_box_plot(), "ggplot"))
-  ok("colors not exhausted", !too_many_colors())
-
-  # swapping axes must not change the model, only the plot
-  session$setInputs(swap_axes = TRUE)
-  ok("swap axes keeps F unchanged",
-     near(anova_terms()$f[3], ref[3, "F value"]))
-  ok("swap axes flips plot roles",
-     plot_roles()$xlab == "herbivores")
 })
 
 # ---- main-effect Tukey when interaction is absent --------------------

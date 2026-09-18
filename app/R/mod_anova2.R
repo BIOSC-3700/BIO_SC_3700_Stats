@@ -23,24 +23,14 @@ mod_anova2_ui <- function(id) {
   out <- bslib::layout_sidebar(
     sidebar = bslib::sidebar(
       width = 360,
-      shiny::uiOutput(ns("setup")),
-      shiny::hr(),
-      shiny::tags$details(
-        shiny::tags$summary("Plot options"),
-        shiny::checkboxInput(
-          ns("swap_axes"),
-          "Swap which factor is on the x-axis", value = FALSE
-        ),
-        plot_controls(ns)
-      )
+      shiny::uiOutput(ns("setup"))
     ),
     shiny::uiOutput(ns("body"))
   )
   return(out)
 }
 
-mod_anova2_server <- function(id, data,
-                              show_plots = TRUE) {
+mod_anova2_server <- function(id, data) {
   shiny::moduleServer(id, function(input, output, session) {
     ns <- session$ns
 
@@ -476,89 +466,6 @@ mod_anova2_server <- function(id, data,
       return(plot_qq(residual_frame(fit())))
     })
 
-    # ---- plots ------------------------------------------------------------
-    plot_roles <- shiny::reactive({
-      cd <- cells()
-      cn <- col_names()
-      if (isTRUE(input$swap_axes)) {
-        return(list(
-          data = tibble::tibble(value = cd$value, a = cd$b, b = cd$a),
-          xlab = cn$b, color_lab = cn$a
-        ))
-      }
-      return(list(
-        data = tibble::tibble(value = cd$value, a = cd$a, b = cd$b),
-        xlab = cn$a, color_lab = cn$b
-      ))
-    })
-
-    too_many_colors <- shiny::reactive({
-      return(nlevels(plot_roles()$data$b) > length(pal$categorical))
-    })
-
-    plot_labels <- shiny::reactive({
-      roles <- plot_roles()
-      return(list(
-        title = label_or(input$plot_title, NULL),
-        xlab = label_or(input$plot_xlab, roles$xlab),
-        ylab = label_or(input$plot_ylab, col_names()$response),
-        color_lab = roles$color_lab
-      ))
-    })
-
-    the_plot <- shiny::reactive({
-      shiny::req(!too_many_colors())
-      labs <- plot_labels()
-      return(plot_interaction(
-        plot_roles()$data, xlab = labs$xlab, ylab = labs$ylab,
-        color_lab = labs$color_lab, title = labs$title
-      ))
-    })
-
-    the_box_plot <- shiny::reactive({
-      shiny::req(!too_many_colors())
-      labs <- plot_labels()
-      return(plot_grouped_boxes(
-        plot_roles()$data, style = input$plot_style %||% "box",
-        xlab = labs$xlab, ylab = labs$ylab,
-        color_lab = labs$color_lab, title = labs$title
-      ))
-    })
-
-    output$plot <- shiny::renderPlot({
-      shiny::req(ready())
-      return(the_plot())
-    })
-
-    output$box_plot <- shiny::renderPlot({
-      shiny::req(ready())
-      return(the_box_plot())
-    })
-
-    output$plot_note <- shiny::renderUI({
-      if (!too_many_colors()) {
-        return(NULL)
-      }
-      roles <- plot_roles()
-      return(shiny::div(
-        class = "alert-box alert-warn",
-        glue::glue(
-          "{roles$color_lab} has {nlevels(roles$data$b)} levels. No ",
-          "set of colors stays distinguishable past ",
-          "{length(pal$categorical)}, so the plot is not drawn. If the ",
-          "other factor has fewer levels, tick “Swap which factor is ",
-          "on the x-axis” under Plot options. The tables above are ",
-          "unaffected."
-        )
-      ))
-    })
-
-    output$download_plot <- plot_download_handler(
-      the_plot, "interaction"
-    )
-    output$download_box <- plot_download_handler(
-      the_box_plot, "two-way-groups"
-    )
 
     code_text <- shiny::reactive({
       cn <- col_names()
@@ -611,24 +518,6 @@ mod_anova2_server <- function(id, data,
         return(out)
       },
       striped = TRUE, spacing = "xs", align = "lrrrrc"
-    )
-
-    output$tukey_cells_plot <- shiny::renderPlot({
-      shiny::req(ready(), isTRUE(input$tukey), interaction_sig())
-      return(plot_tukey(
-        tukey_cells(), conf_level = conf_level(),
-        ylab = glue::glue("Difference in {col_names()$response}")
-      ))
-    })
-
-    output$download_tukey <- plot_download_handler(
-      shiny::reactive({
-        plot_tukey(
-          tukey_cells(), conf_level = conf_level(),
-          ylab = glue::glue("Difference in {col_names()$response}")
-        )
-      }),
-      "tukey-cells"
     )
 
     output$simple_table <- shiny::renderTable(
@@ -738,31 +627,15 @@ mod_anova2_server <- function(id, data,
         return(NULL)
       }
       if (interaction_sig()) {
-        tukey_content <- if (show_plots) {
-          bslib::layout_columns(
-            col_widths = c(6, 6),
-            shiny::div(
-              class = "table-scroll",
-              shiny::tableOutput(ns("tukey_cells_table"))
-            ),
-            plot_panel(
-              ns, height = "360px",
-              plot_id = "tukey_cells_plot",
-              dl_id = "download_tukey"
-            )
-          )
-        } else {
-          shiny::div(
-            class = "table-scroll",
-            shiny::tableOutput(ns("tukey_cells_table"))
-          )
-        }
         return(bslib::card(
           bslib::card_header(
             "Post-hoc: which combinations differ?"
           ),
           shiny::uiOutput(ns("posthoc_intro")),
-          tukey_content,
+          shiny::div(
+            class = "table-scroll",
+            shiny::tableOutput(ns("tukey_cells_table"))
+          ),
           shiny::tags$h6("Simple effects"),
           shiny::div(
             class = "table-scroll",
@@ -823,55 +696,27 @@ mod_anova2_server <- function(id, data,
         ))
       }
       shiny::req(ready())
-      interaction_card <- if (show_plots) {
-        bslib::card(
-          bslib::card_header("Interaction plot"),
-          shiny::uiOutput(ns("plot_note")),
-          plot_panel(ns, height = "380px"),
-          shiny::p(class = "hint", paste(
-            "Parallel lines mean no interaction.",
-            "Lines that converge, diverge, or cross",
-            "are what an interaction looks like."
-          ))
-        )
-      }
-      group_card <- if (show_plots) {
-        bslib::card(
-          bslib::card_header("Group comparison"),
-          plot_panel(
-            ns, height = "420px",
-            plot_id = "box_plot",
-            dl_id = "download_box"
-          )
-        )
-      }
-      widths <- if (show_plots) c(6, 6) else 12
       return(shiny::tagList(
         intro,
         shiny::uiOutput(ns("verdict")),
         shiny::uiOutput(ns("balance")),
-        bslib::layout_columns(
-          col_widths = widths,
-          bslib::card(
-            bslib::card_header("ANOVA table"),
-            shiny::div(
-              class = "table-scroll",
-              shiny::tableOutput(ns("anova_table"))
-            ),
-            shiny::tags$h6("Cell means"),
-            shiny::div(
-              class = "table-scroll",
-              shiny::tableOutput(ns("cell_table"))
-            ),
-            shiny::tags$h6("Cell counts"),
-            shiny::div(
-              class = "table-scroll",
-              shiny::tableOutput(ns("counts_table"))
-            )
+        bslib::card(
+          bslib::card_header("ANOVA table"),
+          shiny::div(
+            class = "table-scroll",
+            shiny::tableOutput(ns("anova_table"))
           ),
-          interaction_card
+          shiny::tags$h6("Cell means"),
+          shiny::div(
+            class = "table-scroll",
+            shiny::tableOutput(ns("cell_table"))
+          ),
+          shiny::tags$h6("Cell counts"),
+          shiny::div(
+            class = "table-scroll",
+            shiny::tableOutput(ns("counts_table"))
+          )
         ),
-        group_card,
         posthoc_section(),
         bslib::accordion(
           open = TRUE,

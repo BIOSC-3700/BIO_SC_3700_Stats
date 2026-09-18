@@ -84,32 +84,6 @@ label_or <- function(value, fallback) {
   return(value)
 }
 
-# Shared plot-appearance controls, used on all three analysis tabs.
-plot_controls <- function(ns, style_choices = TRUE) {
-  items <- list(
-    shiny::textInput(ns("plot_title"), "Plot title", value = ""),
-    shiny::textInput(ns("plot_xlab"), "X-axis label", value = ""),
-    shiny::textInput(ns("plot_ylab"), "Y-axis label", value = "")
-  )
-  if (style_choices) {
-    items <- c(
-      list(shiny::radioButtons(
-        ns("plot_style"),
-        "Plot style",
-        choices = c(
-          "Boxplot" = "box",
-          "Violin" = "violin",
-          "Points only" = "points"
-        ),
-        selected = "box",
-        inline = TRUE
-      )),
-      items
-    )
-  }
-  return(items)
-}
-
 # Wraps a plot output plus its PNG download button.
 plot_panel <- function(
   ns,

@@ -19,19 +19,14 @@ mod_ttest1_ui <- function(id) {
         ),
         selected = "single"
       ),
-      shiny::uiOutput(ns("setup")),
-      shiny::hr(),
-      shiny::tags$details(
-        shiny::tags$summary("Plot options"),
-        plot_controls(ns, style_choices = FALSE)
-      )
+      shiny::uiOutput(ns("setup"))
     ),
     shiny::uiOutput(ns("body"))
   )
   return(out)
 }
 
-mod_ttest1_server <- function(id, data, show_plots = TRUE) {
+mod_ttest1_server <- function(id, data) {
   shiny::moduleServer(id, function(input, output, session) {
     ns <- session$ns
 
@@ -266,39 +261,6 @@ mod_ttest1_server <- function(id, data, show_plots = TRUE) {
       return(plot_qq(check_data()))
     })
 
-    the_plot <- shiny::reactive({
-      res <- result()
-      sample <- sample_values()
-      labs <- data$labels()
-      title <- label_or(input$plot_title, NULL)
-      default_x <- if (identical(input$mode, "diff")) {
-        as.character(sample$label)
-      } else {
-        labs$value
-      }
-      xlab <- label_or(input$plot_xlab, default_x)
-      return(plot_one_sample(
-        values = sample$values,
-        mu0 = mu0(),
-        ci_low = res$conf.int[1],
-        ci_high = res$conf.int[2],
-        mean_val = unname(res$estimate),
-        title = title,
-        xlab = xlab,
-        conf_level = conf_level()
-      ))
-    })
-
-    output$plot <- shiny::renderPlot({
-      shiny::req(length(problems()) == 0)
-      return(the_plot())
-    })
-
-    output$download_plot <- plot_download_handler(
-      the_plot,
-      "one-sample-t"
-    )
-
     code_text <- shiny::reactive({
       alt <- input$alt %||% "two.sided"
       cl <- conf_level()
@@ -365,23 +327,12 @@ mod_ttest1_server <- function(id, data, show_plots = TRUE) {
           cannot_run_panel(probs)
         ))
       }
-      plot_card <- if (show_plots) {
-        bslib::card(
-          bslib::card_header("Plot"),
-          plot_panel(ns, height = "300px")
-        )
-      }
-      widths <- if (show_plots) c(5, 7) else 12
       return(shiny::tagList(
         intro,
         shiny::uiOutput(ns("verdict")),
-        bslib::layout_columns(
-          col_widths = widths,
-          bslib::card(
-            bslib::card_header("Result"),
-            shiny::uiOutput(ns("stats"))
-          ),
-          plot_card
+        bslib::card(
+          bslib::card_header("Result"),
+          shiny::uiOutput(ns("stats"))
         ),
         bslib::accordion(
           open = TRUE,

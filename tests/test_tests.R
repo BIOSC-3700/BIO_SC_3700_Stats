@@ -32,10 +32,7 @@ testServer(mod_ttest2_server,
                                    "horn.length", "group")), {
   session$setInputs(g1 = lv[1], g2 = lv[2], paired = FALSE,
                     var_equal = FALSE, alt = "two.sided",
-                    conf = 0.95, plot_style = "box",
-                    plot_title = "", plot_xlab = "",
-                    plot_ylab = "",
-                    run_analysis = 1)
+                    conf = 0.95, run_analysis = 1)
   ref <- t.test(
     lizard$horn.length[lizard$group == lv[1]],
     lizard$horn.length[lizard$group == lv[2]])
@@ -47,7 +44,6 @@ testServer(mod_ttest2_server,
      test_name() == "Welch's two-sample t-test")
   ok("no problems", length(problems()) == 0)
   ok("verdict renders", grepl("Welch", output$verdict$html))
-  ok("plot builds", inherits(the_plot(), "ggplot"))
 
   # pooled variant
   session$setInputs(var_equal = TRUE)
@@ -80,9 +76,7 @@ testServer(mod_ttest2_server,
            args = list(data = stub(jetlag_tidy, jetlag)), {
   session$setInputs(g1 = "control", g2 = "eyes",
                     paired = FALSE, var_equal = FALSE,
-                    alt = "two.sided", conf = 0.95,
-                    plot_style = "box", plot_title = "",
-                    plot_xlab = "", plot_ylab = "")
+                    alt = "two.sided", conf = 0.95)
   ok("subsets 3 groups to 2",
      nlevels(pair_data()$group) == 2)
   ref <- t.test(
@@ -97,9 +91,7 @@ testServer(mod_ttest1_server,
            args = list(data = stub(lizard_tidy, lizard,
                                    "horn.length", "group")), {
   session$setInputs(mode = "single", group = "__all__",
-                    mu = 20, alt = "two.sided", conf = 0.95,
-                    plot_title = "", plot_xlab = "",
-                    plot_ylab = "")
+                    mu = 20, alt = "two.sided", conf = 0.95)
   ref <- t.test(lizard$horn.length, mu = 20)
   ok("one-sample p matches",
      near(result()$p.value, ref$p.value))
@@ -111,7 +103,6 @@ testServer(mod_ttest1_server,
     lizard$horn.length[lizard$group == lv[1]], mu = 20)
   ok("group subset p matches",
      near(result()$p.value, ref2$p.value))
-  ok("plot builds", inherits(the_plot(), "ggplot"))
 })
 
 # ---- one-sample: difference-between-columns (paired) ----------------
@@ -119,9 +110,7 @@ testServer(mod_ttest1_server,
            args = list(data = stub(NULL, bb)), {
   session$setInputs(mode = "diff", col1 = "before",
                     col2 = "after", mu = 0,
-                    alt = "two.sided", conf = 0.95,
-                    plot_title = "", plot_xlab = "",
-                    plot_ylab = "")
+                    alt = "two.sided", conf = 0.95)
   ref <- t.test(bb$after, bb$before, paired = TRUE)
   ok("diff mode equals paired t-test",
      near(result()$p.value, ref$p.value))
@@ -137,9 +126,7 @@ testServer(mod_ttest1_server,
 testServer(mod_anova_server,
            args = list(data = stub(jetlag_tidy, jetlag,
                                    "shift", "treatment")), {
-  session$setInputs(tukey = TRUE, conf = 0.95,
-                    plot_style = "box", plot_title = "",
-                    plot_xlab = "", plot_ylab = "")
+  session$setInputs(tukey = TRUE, conf = 0.95)
   ref <- summary(aov(shift ~ treatment,
                      data = jetlag))[[1]]
   ok("anova F matches",
@@ -157,10 +144,6 @@ testServer(mod_anova_server,
      identical(gsub(" \u2212 ", "-", tk$comparison,
                     fixed = TRUE),
                rownames(reft)))
-  ok("tukey plot builds",
-     inherits(the_tukey_plot(), "ggplot"))
-  ok("anova plot builds",
-     inherits(the_plot(), "ggplot"))
 })
 
 # ---- ANOVA refuses 2 groups -----------------------------------------

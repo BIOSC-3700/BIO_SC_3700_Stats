@@ -10,19 +10,14 @@ mod_ttest2_ui <- function(id) {
   out <- bslib::layout_sidebar(
     sidebar = bslib::sidebar(
       width = 360,
-      shiny::uiOutput(ns("setup")),
-      shiny::hr(),
-      shiny::tags$details(
-        shiny::tags$summary("Plot options"),
-        plot_controls(ns)
-      )
+      shiny::uiOutput(ns("setup"))
     ),
     shiny::uiOutput(ns("body"))
   )
   return(out)
 }
 
-mod_ttest2_server <- function(id, data, show_plots = TRUE) {
+mod_ttest2_server <- function(id, data) {
   shiny::moduleServer(id, function(input, output, session) {
     ns <- session$ns
 
@@ -245,31 +240,6 @@ mod_ttest2_server <- function(id, data, show_plots = TRUE) {
       return(plot_qq(pair_data()))
     })
 
-    the_plot <- shiny::reactive({
-      pd <- pair_data()
-      labs <- data$labels()
-      title <- label_or(input$plot_title, NULL)
-      xlab <- label_or(input$plot_xlab, labs$group)
-      ylab <- label_or(input$plot_ylab, labs$value)
-      return(plot_groups(
-        pd,
-        style = input$plot_style %||% "box",
-        title = title,
-        xlab = xlab,
-        ylab = ylab
-      ))
-    })
-
-    output$plot <- shiny::renderPlot({
-      shiny::req(length(problems()) == 0)
-      return(the_plot())
-    })
-
-    output$download_plot <- plot_download_handler(
-      the_plot,
-      "two-sample-t"
-    )
-
     code_text <- shiny::reactive({
       labs <- data$labels()
       shiny::req(labs)
@@ -325,28 +295,17 @@ mod_ttest2_server <- function(id, data, show_plots = TRUE) {
           cannot_run_panel(probs)
         ))
       }
-      plot_card <- if (show_plots) {
-        bslib::card(
-          bslib::card_header("Plot"),
-          plot_panel(ns)
-        )
-      }
-      widths <- if (show_plots) c(5, 7) else 12
       return(shiny::tagList(
         intro,
         shiny::uiOutput(ns("verdict")),
-        bslib::layout_columns(
-          col_widths = widths,
-          bslib::card(
-            bslib::card_header("Result"),
-            shiny::uiOutput(ns("stats")),
-            shiny::tags$h6("Group summary"),
-            shiny::div(
-              class = "table-scroll",
-              shiny::tableOutput(ns("summary"))
-            )
-          ),
-          plot_card
+        bslib::card(
+          bslib::card_header("Result"),
+          shiny::uiOutput(ns("stats")),
+          shiny::tags$h6("Group summary"),
+          shiny::div(
+            class = "table-scroll",
+            shiny::tableOutput(ns("summary"))
+          )
         ),
         bslib::accordion(
           open = TRUE,
