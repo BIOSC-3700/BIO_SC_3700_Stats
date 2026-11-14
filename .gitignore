@@ -51,3 +51,4 @@ rsconnect/
 # shinylive export output
 site/
 .DS_Store
+/Assignments

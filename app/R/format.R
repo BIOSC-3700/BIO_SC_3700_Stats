@@ -119,6 +119,16 @@ verdict_class <- function(p, alpha = 0.05) {
   return(if (p < alpha) "verdict verdict-sig" else "verdict verdict-ns")
 }
 
+# Stacks a list of one-row tibbles into one tibble. NULL entries are
+# skipped, and an empty list gives NULL.
+bind_tibbles <- function(rows) {
+  rows <- Filter(Negate(is.null), rows)
+  if (length(rows) == 0) {
+    return(NULL)
+  }
+  return(tibble::as_tibble(do.call(rbind, rows)))
+}
+
 # Standard error of the mean, used in every group summary table.
 se_mean <- function(x) {
   x <- x[!is.na(x)]
@@ -131,31 +141,37 @@ se_mean <- function(x) {
 # Per-group n / mean / SD / SE / min / max, the table shown under every
 # preview and beside every result.
 group_summary <- function(data) {
-  out <- data |>
-    dplyr::filter(!is.na(.data$value)) |>
-    dplyr::group_by(.data$group) |>
-    dplyr::summarize(
-      n = dplyr::n(),
-      mean = mean(.data$value),
-      sd = stats::sd(.data$value),
-      se = se_mean(.data$value),
-      min = min(.data$value),
-      max = max(.data$value),
-      .groups = "drop"
-    )
+  keep <- !is.na(data$value)
+  group <- data$group[keep]
+  if (!is.factor(group)) {
+    group <- factor(group)
+  }
+  present <- droplevels(group)
+  by_group <- split(data$value[keep], present)
+  stat <- function(fn) {
+    return(unname(vapply(by_group, fn, numeric(1))))
+  }
+  out <- tibble::tibble(
+    group = factor(levels(present), levels = levels(group)),
+    n = unname(vapply(by_group, length, integer(1))),
+    mean = stat(mean),
+    sd = stat(stats::sd),
+    se = stat(se_mean),
+    min = stat(min),
+    max = stat(max)
+  )
   return(out)
 }
 
 # Renders a summary tibble with the numeric columns already formatted.
 summary_table <- function(data, digits = 3, compact = FALSE) {
   if (compact) {
-    data <- dplyr::select(data, -"min", -"max")
+    data <- data[setdiff(names(data), c("min", "max"))]
   }
-  out <- data |>
-    dplyr::mutate(dplyr::across(
-      dplyr::where(is.numeric) & !dplyr::any_of("n"),
-      \(x) fmt_num(x, digits)
-    ))
+  out <- data
+  for (col in setdiff(names(out), c("group", "n"))) {
+    out[[col]] <- fmt_num(out[[col]], digits)
+  }
   names(out) <- if (compact) {
     c("Group", "n", "Mean", "SD", "SE")
   } else {

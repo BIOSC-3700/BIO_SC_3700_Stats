@@ -58,7 +58,7 @@ shapiro_by_group <- function(data) {
       p = res$p.value
     ))
   })
-  return(dplyr::bind_rows(rows))
+  return(bind_tibbles(rows))
 }
 
 check_normality <- function(data) {
@@ -196,11 +196,9 @@ check_variance <- function(data, welch_used = TRUE) {
       table = NULL
     ))
   }
-  sds <- data |>
-    dplyr::filter(!is.na(.data$value)) |>
-    dplyr::group_by(.data$group) |>
-    dplyr::summarize(sd = stats::sd(.data$value), .groups = "drop")
-  ratio <- max(sds$sd, na.rm = TRUE) / min(sds$sd, na.rm = TRUE)
+  keep <- !is.na(data$value)
+  sds <- tapply(data$value[keep], data$group[keep], stats::sd)
+  ratio <- max(sds, na.rm = TRUE) / min(sds, na.rm = TRUE)
   stat_txt <- glue::glue(
     "Levene's test: F({res$df1}, {res$df2}) = ",
     "{fmt_num(res$statistic, 2)}, {fmt_p_inline(res$p.value)}. ",
@@ -237,20 +235,21 @@ check_variance <- function(data, welch_used = TRUE) {
 
 # 1.5 x IQR within each group. Flagging is not permission to delete.
 outlier_flags <- function(data) {
-  out <- data |>
-    dplyr::group_by(.data$group) |>
-    dplyr::mutate(
-      .q1 = stats::quantile(.data$value, 0.25, na.rm = TRUE),
-      .q3 = stats::quantile(.data$value, 0.75, na.rm = TRUE),
-      .iqr = .data$.q3 - .data$.q1,
-      is_outlier = !is.na(.data$value) &
-        .data$.iqr > 0 &
-        (.data$value < .data$.q1 - 1.5 * .data$.iqr |
-          .data$value > .data$.q3 + 1.5 * .data$.iqr)
-    ) |>
-    dplyr::ungroup() |>
-    dplyr::select(-".q1", -".q3", -".iqr")
-  return(out)
+  # ave() broadcasts each group's quartile back onto that group's rows.
+  group_quantile <- function(prob) {
+    return(stats::ave(
+      data$value,
+      data$group,
+      FUN = function(v) stats::quantile(v, prob, na.rm = TRUE)
+    ))
+  }
+  q1 <- group_quantile(0.25)
+  q3 <- group_quantile(0.75)
+  iqr <- q3 - q1
+  data$is_outlier <- !is.na(data$value) &
+    iqr > 0 &
+    (data$value < q1 - 1.5 * iqr | data$value > q3 + 1.5 * iqr)
+  return(data)
 }
 
 # mention_plot is FALSE on the two-way tab, whose dodged boxplot draws
@@ -270,12 +269,12 @@ check_outliers <- function(data, mention_plot = TRUE) {
       table = NULL
     ))
   }
-  where <- flagged |>
-    dplyr::filter(.data$is_outlier) |>
-    dplyr::count(.data$group, name = "n") |>
-    dplyr::mutate(txt = glue::glue("{group} ({n})")) |>
-    dplyr::pull("txt") |>
-    paste(collapse = ", ")
+  per_group <- table(flagged$group[flagged$is_outlier])
+  per_group <- per_group[per_group > 0]
+  where <- paste(
+    glue::glue("{names(per_group)} ({as.integer(per_group)})"),
+    collapse = ", "
+  )
   return(list(
     status = "warn",
     title = glue::glue(

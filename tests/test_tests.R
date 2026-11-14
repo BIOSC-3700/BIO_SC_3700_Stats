@@ -1,7 +1,7 @@
 suppressMessages({
-  library(shiny); library(bslib); library(ggplot2); library(dplyr)
+  library(shiny); library(bslib); library(ggplot2)
   library(tibble); library(readr); library(readxl)
-  library(DT); library(glue); library(fs)
+  library(glue); library(fs)
 })
 for (f in list.files("R", full.names = TRUE)) source(f)
 ok <- function(label, cond) cat(sprintf("[%s] %s\n", if (isTRUE(cond)) "PASS" else "FAIL", label))
@@ -18,11 +18,16 @@ jetlag_tidy <- tibble(value = jetlag$shift,
 bb <- read_csv("data/blackbird_antibodies.csv",
                show_col_types = FALSE)
 
+numeric_names <- function(raw_df) {
+  if (is.null(raw_df)) return(character(0))
+  names(raw_df)[vapply(raw_df, is.numeric, logical(1))]
+}
 stub <- function(tidy_df, raw_df,
                  vlab = "value", glab = "group") {
   list(raw = reactive(raw_df), tidy = reactive(tidy_df),
        info = reactive(NULL),
-       labels = reactive(list(value = vlab, group = glab)))
+       labels = reactive(list(value = vlab, group = glab)),
+       numeric_cols = reactive(numeric_names(raw_df)))
 }
 
 # ---- two-sample: Welch ---------------------------------------------

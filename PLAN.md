@@ -285,10 +285,10 @@ Keep this list short; every entry costs load time.
 | `shiny` | app framework | required |
 | `bslib` | layout, theming, cards | required |
 | `ggplot2` | all plots | |
-| `dplyr` | group summaries | |
-| `readr` | CSV/TSV import | kept |
+| `dplyr` | group summaries | dropped 2026-11-14; base `split()`, `tapply()`, `ave()` |
+| `readr` | CSV/TSV import | dropped; base `read.csv()` |
 | `readxl` | Excel import | confirmed available in the webR repo |
-| `DT` | preview table | kept; 1.7 MB |
+| `DT` | preview table | dropped 2026-11-14; its htmlwidgets chain cost 6 MB |
 
 Everything statistical comes from base `stats`: `t.test()`, `aov()`,
 `TukeyHSD()`, `oneway.test()`, `shapiro.test()`. No modeling packages.
@@ -344,7 +344,8 @@ spellings (`summarize`, `color`). Do not name any data frame `df`.
 4. **How large is the first-load payload?** About 25 MB of package
    binaries after dropping `tidyr` (see below), down from 40 MB. webR
    fetches packages lazily, and the browser caches them, so this is a
-   once-per-student cost.
+   once-per-student cost. Dropping `DT` and `dplyr` in November 2026
+   brought the measured bundle to 16 MB across 20 packages.
 5. **Which example datasets ship?** Four generic ones in `app/data/`,
    chosen to exercise distinct code paths: a 3-group long-format set
    (significant ANOVA where exactly one Tukey pair is non-significant),
@@ -362,6 +363,15 @@ spellings (`summarize`, `color`). Do not name any data frame `df`.
   stack is now base R, verified to produce output identical to
   `pivot_longer()` including within-group row order (which the paired
   t-test depends on).
+- **`DT` was dropped.** The `1.7 MB` in the table above counted only
+  DT itself. DT imports htmlwidgets, which imports rmarkdown and
+  knitr, and the whole chain was eleven packages and about 6 MB. The
+  preview is now `renderTable()` over the first 200 rows inside a
+  scrolling card, which loses column sorting and paging.
+- **`dplyr` was dropped.** It served ten small summaries and filters
+  at a cost of 1.3 MB with tidyselect and generics. Those now use
+  `split()`, `tapply()`, and `ave()`, verified against the dplyr
+  versions on every example dataset and every plot layer.
 - **Layout inference is simpler than described.** Two or more numeric
   columns reads as wide, otherwise long. The earlier column-counting
   rules mis-classified a paired `subject`/`before`/`after` table. The

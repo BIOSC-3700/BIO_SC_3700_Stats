@@ -87,10 +87,12 @@ app/
 
 Every `library()` call in `app/app.R` is a download on a student's
 first visit, so the list is deliberately short: shiny, bslib, ggplot2,
-dplyr, tibble, readr, readxl, DT, glue, fs. That comes to about 25 MB
-of WebAssembly package binaries.
+tibble, readxl, glue, fs. Of those, shiny, bslib, glue, and fs ship
+inside the shinylive base image, so the app-specific bundle is ggplot2,
+readxl, tibble, and their imports: 20 packages, about 16 MB of
+WebAssembly binaries, measured from the `shinylive::export()` output.
 
-Two dependencies were removed on purpose:
+Four dependencies were removed on purpose:
 
 - **car** — Levene's test is implemented directly in
   `R/assumptions.R` as a one-way ANOVA on absolute deviations from
@@ -98,6 +100,13 @@ Two dependencies were removed on purpose:
 - **tidyr** — it was used for a single `pivot_longer()` call, but it
   imports stringr, which pulls in stringi. That one reshape was costing
   14 MB, so the wide-to-long stack is done in base R.
+- **DT** — it imports htmlwidgets, which imports rmarkdown and knitr.
+  That chain is eleven packages and about 6 MB for one preview table,
+  so the preview is a plain `renderTable()` of the first 200 rows.
+- **dplyr** — with tidyselect and generics, 1.3 MB for ten small
+  summaries and filters. Those use `split()`, `tapply()`, and `ave()`
+  instead. Dropping DT and dplyr together took the bundle from 34
+  packages and 23 MB to 20 packages and 16 MB.
 
 All statistics come from base `stats`: `t.test()`, `aov()`,
 `TukeyHSD()`, `oneway.test()`, `shapiro.test()`.

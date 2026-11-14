@@ -83,7 +83,8 @@ plot_groups <- function(
   show_outliers = TRUE,
   show_mean = TRUE
 ) {
-  data <- outlier_flags(data) |> dplyr::filter(!is.na(.data$value))
+  data <- outlier_flags(data)
+  data <- data[!is.na(data$value), ]
   data$group <- droplevels(data$group)
   group_levels <- levels(data$group)
   data$x <- as.integer(data$group)
@@ -123,7 +124,7 @@ plot_groups <- function(
   if (show_outliers && any(data$is_outlier)) {
     p <- p +
       ggplot2::geom_point(
-        data = dplyr::filter(data, .data$is_outlier),
+        data = data[data$is_outlier, ],
         ggplot2::aes(x = .data$xj),
         shape = 21,
         size = 4.2,
@@ -270,7 +271,7 @@ plot_one_sample <- function(
 
 # QQ plot per group, the visual companion to Shapiro-Wilk.
 plot_qq <- function(data, title = NULL) {
-  data <- dplyr::filter(data, !is.na(.data$value))
+  data <- data[!is.na(data$value), ]
   p <- ggplot2::ggplot(data, ggplot2::aes(sample = .data$value)) +
     ggplot2::stat_qq_line(color = pal$ink2, linewidth = 0.6) +
     ggplot2::stat_qq(color = pal$accent, size = 2, alpha = 0.8) +
@@ -301,22 +302,20 @@ plot_tukey <- function(
   title = NULL,
   ylab = "Difference in means"
 ) {
-  data <- tukey_tbl |>
-    dplyr::mutate(
-      sig = factor(
-        ifelse(
-          .data$p_adj < 1 - conf_level,
-          "Significant",
-          "Not significant"
-        ),
-        levels = c("Significant", "Not significant")
-      ),
-      comparison = factor(
-        .data$comparison,
-        levels = rev(.data$comparison)
-      ),
-      label = as.character(fmt_p_inline(.data$p_adj))
-    )
+  data <- tukey_tbl
+  data$sig <- factor(
+    ifelse(
+      data$p_adj < 1 - conf_level,
+      "Significant",
+      "Not significant"
+    ),
+    levels = c("Significant", "Not significant")
+  )
+  data$comparison <- factor(
+    data$comparison,
+    levels = rev(data$comparison)
+  )
+  data$label <- as.character(fmt_p_inline(data$p_adj))
   span <- diff(range(c(data$lwr, data$upr, 0)))
   pad <- if (span > 0) span * 0.36 else 1
   p <- ggplot2::ggplot(
@@ -394,15 +393,20 @@ cat_shapes <- function(levels_vec) {
 
 # Cell means with standard errors, the table behind both plots.
 cell_means <- function(cells) {
-  out <- cells |>
-    dplyr::filter(!is.na(.data$value)) |>
-    dplyr::group_by(.data$a, .data$b) |>
-    dplyr::summarize(
-      n = dplyr::n(),
-      mean = mean(.data$value),
-      se = se_mean(.data$value),
-      .groups = "drop"
-    )
+  cells <- cells[!is.na(cells$value), ]
+  # lex.order makes a the slow index, so rows come out sorted by a,
+  # then b, matching the order the cell-means table has always had.
+  key <- interaction(cells$a, cells$b, drop = TRUE, lex.order = TRUE)
+  first <- which(!duplicated(key))
+  first <- first[order(key[first])]
+  by_cell <- split(cells$value, key)
+  out <- tibble::tibble(
+    a = cells$a[first],
+    b = cells$b[first],
+    n = unname(vapply(by_cell, length, integer(1))),
+    mean = unname(vapply(by_cell, mean, numeric(1))),
+    se = unname(vapply(by_cell, se_mean, numeric(1)))
+  )
   return(out)
 }
 
@@ -474,7 +478,7 @@ plot_grouped_boxes <- function(
   color_lab = "Factor B",
   title = NULL
 ) {
-  cells <- dplyr::filter(cells, !is.na(.data$value))
+  cells <- cells[!is.na(cells$value), ]
   b_levels <- levels(cells$b)
   dodge_width <- 0.78
   p <- ggplot2::ggplot(
@@ -533,15 +537,7 @@ plot_grouped_boxes <- function(
 
 # Bar plot of group means with SE error bars.
 plot_bar <- function(data, title = NULL, xlab = "Group", ylab = "Value") {
-  data <- dplyr::filter(data, !is.na(.data$value))
-  data$group <- droplevels(data$group)
-  stats <- data |>
-    dplyr::group_by(.data$group) |>
-    dplyr::summarize(
-      mean = mean(.data$value),
-      se = se_mean(.data$value),
-      .groups = "drop"
-    )
+  stats <- group_summary(data)
   p <- ggplot2::ggplot(
     stats,
     ggplot2::aes(x = .data$group, y = .data$mean)
@@ -581,7 +577,7 @@ plot_grouped_bar <- function(
   color_lab = "Factor B",
   title = NULL
 ) {
-  cells <- dplyr::filter(cells, !is.na(.data$value))
+  cells <- cells[!is.na(cells$value), ]
   b_levels <- levels(cells$b)
   stats <- cell_means(cells)
   dodge_width <- 0.7

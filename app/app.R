@@ -10,10 +10,8 @@
 library(shiny)
 library(bslib)
 library(ggplot2)
-library(dplyr)
 library(tibble)
 library(readxl)
-library(DT)
 library(glue)
 library(fs)
 

@@ -5,9 +5,14 @@
 # app — that is why this job installs more than just shinylive.
 name: Deploy app to GitHub Pages
 
+# Only changes that reach the exported site trigger a rebuild. Edits to
+# docs, tests, or editor config do not.
 on:
   push:
     branches: [main]
+    paths:
+      - "app/**"
+      - ".github/workflows/deploy.yml"
   workflow_dispatch:
 
 permissions:
@@ -37,22 +42,31 @@ jobs:
           key: r-lib-${{ runner.os }}-${{ hashFiles('.github/workflows/deploy.yml') }}
           restore-keys: r-lib-${{ runner.os }}-
 
+      - name: Install R packages
+        shell: Rscript {0}
+        run: |
+          pkgs <- c("shinylive", "shiny", "bslib", "ggplot2",
+                    "tibble", "readxl", "glue", "fs")
+          missing <- pkgs[!pkgs %in% rownames(installed.packages())]
+          if (length(missing) > 0) install.packages(missing)
+
       # The wasm runtime and package binaries are large and change only
-      # when shinylive itself does, so they are worth caching.
+      # when shinylive itself does, so the cache is keyed on its version
+      # rather than on the app source.
+      - name: Record shinylive version
+        id: shinylive
+        shell: Rscript {0}
+        run: |
+          cat(
+            "version=", as.character(packageVersion("shinylive")), "\n",
+            file = Sys.getenv("GITHUB_OUTPUT"), sep = "", append = TRUE
+          )
+
       - name: Cache shinylive web assets
         uses: actions/cache@v5
         with:
           path: ~/.cache/shinylive
-          key: shinylive-assets-${{ runner.os }}-${{ hashFiles('app/app.R') }}
-          restore-keys: shinylive-assets-${{ runner.os }}-
-
-      - name: Install R packages
-        shell: Rscript {0}
-        run: |
-          pkgs <- c("shinylive", "shiny", "bslib", "ggplot2", "dplyr",
-                    "tibble", "readxl", "DT", "glue", "fs")
-          missing <- pkgs[!pkgs %in% rownames(installed.packages())]
-          if (length(missing) > 0) install.packages(missing)
+          key: shinylive-assets-${{ runner.os }}-${{ steps.shinylive.outputs.version }}
 
       # template_params sets the browser tab title; without it the
       # exported page is titled "Shiny App".

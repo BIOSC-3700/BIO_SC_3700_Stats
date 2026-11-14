@@ -42,17 +42,9 @@ mod_ttest1_server <- function(id, data) {
       confirmed(TRUE)
     })
 
-    numeric_columns <- shiny::reactive({
-      raw <- data$raw()
-      if (is.null(raw)) {
-        return(character(0))
-      }
-      return(names(raw)[vapply(raw, is.numeric, logical(1))])
-    })
-
     output$setup <- shiny::renderUI({
       if (identical(input$mode, "diff")) {
-        cols <- numeric_columns()
+        cols <- data$numeric_cols()
         if (length(cols) < 2) {
           return(shiny::p(
             class = "hint",
@@ -161,7 +153,7 @@ mod_ttest1_server <- function(id, data) {
       }
       out <- character(0)
       if (identical(input$mode, "diff")) {
-        if (length(numeric_columns()) < 2) {
+        if (length(data$numeric_cols()) < 2) {
           return(paste(
             "Testing a difference needs two numeric columns. Load data",
             "with a 'before' and an 'after' column, or switch to the",

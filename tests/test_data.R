@@ -1,7 +1,7 @@
 suppressMessages({
-  library(shiny); library(bslib); library(ggplot2); library(dplyr)
+  library(shiny); library(bslib); library(ggplot2)
   library(tibble); library(readr); library(readxl)
-  library(DT); library(glue); library(fs)
+  library(glue); library(fs)
 })
 for (f in list.files("R", full.names = TRUE)) source(f)
 ok <- function(label, cond) cat(sprintf("[%s] %s\n", if (isTRUE(cond)) "PASS" else "FAIL", label))

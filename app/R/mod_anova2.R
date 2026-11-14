@@ -50,14 +50,6 @@ mod_anova2_server <- function(id, data) {
       return(names(raw))
     })
 
-    numeric_columns <- shiny::reactive({
-      raw <- data$raw()
-      if (is.null(raw)) {
-        return(character(0))
-      }
-      return(names(raw)[vapply(raw, is.numeric, logical(1))])
-    })
-
     output$setup <- shiny::renderUI({
       raw <- data$raw()
       if (is.null(raw)) {
@@ -66,7 +58,7 @@ mod_anova2_server <- function(id, data) {
         ))
       }
       cols <- all_columns()
-      nums <- numeric_columns()
+      nums <- data$numeric_cols()
       if (length(nums) == 0 || length(cols) < 3) {
         return(shiny::p(class = "hint", paste(
           "A factorial ANOVA needs at least three columns: one",
@@ -233,7 +225,7 @@ mod_anova2_server <- function(id, data) {
       if (length(out) > 0) {
         return(out)
       }
-      tab <- table(cd$a, cd$b)
+      tab <- counts()
       # An empty cell makes the interaction inestimable and aov()
       # quietly returns NA rather than complaining.
       if (any(tab == 0)) {
@@ -357,7 +349,14 @@ mod_anova2_server <- function(id, data) {
           f = tab[1, "F value"], p = tab[1, "Pr(>F)"]
         ))
       })
-      return(dplyr::bind_rows(rows))
+      out <- bind_tibbles(rows)
+      if (is.null(out)) {
+        out <- tibble::tibble(
+          level = character(0), df1 = numeric(0), df2 = numeric(0),
+          f = numeric(0), p = numeric(0)
+        )
+      }
+      return(out)
     })
 
     # ---- rendered output ------------------------------------------------
@@ -433,14 +432,15 @@ mod_anova2_server <- function(id, data) {
     output$cell_table <- shiny::renderTable(
       {
         cn <- col_names()
-        out <- cell_means(cells()) |>
-          dplyr::transmute(
-            !!cn$a := as.character(.data$a),
-            !!cn$b := as.character(.data$b),
-            n = .data$n,
-            Mean = fmt_num(.data$mean),
-            SE = fmt_num(.data$se)
-          )
+        cm <- cell_means(cells())
+        out <- tibble::tibble(
+          a = as.character(cm$a),
+          b = as.character(cm$b),
+          n = cm$n,
+          Mean = fmt_num(cm$mean),
+          SE = fmt_num(cm$se)
+        )
+        names(out)[1:2] <- c(cn$a, cn$b)
         return(out)
       },
       striped = TRUE, spacing = "xs", align = "llrrr"

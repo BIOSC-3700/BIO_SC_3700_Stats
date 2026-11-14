@@ -107,10 +107,13 @@ mod_ttest2_server <- function(id, data) {
       tidy <- data$tidy()
       shiny::req(tidy, input$g1, input$g2)
       chosen <- c(input$g1, input$g2)
-      out <- tidy |>
-        dplyr::filter(.data$group %in% chosen) |>
-        dplyr::mutate(group = factor(.data$group, levels = chosen))
+      out <- tidy[tidy$group %in% chosen, ]
+      out$group <- factor(out$group, levels = chosen)
       return(out)
+    })
+
+    pair_summary <- shiny::reactive({
+      return(group_summary(pair_data()))
     })
 
     problems <- shiny::reactive({
@@ -176,8 +179,7 @@ mod_ttest2_server <- function(id, data) {
     # ---- results -------------------------------------------------------
     output$verdict <- shiny::renderUI({
       res <- result()
-      pd <- pair_data()
-      stats_by_group <- group_summary(pd)
+      stats_by_group <- pair_summary()
       m1 <- stats_by_group$mean[stats_by_group$group == input$g1]
       m2 <- stats_by_group$mean[stats_by_group$group == input$g2]
       n1 <- stats_by_group$n[stats_by_group$group == input$g1]
@@ -216,7 +218,7 @@ mod_ttest2_server <- function(id, data) {
 
     output$summary <- shiny::renderTable(
       {
-        summary_table(group_summary(pair_data()), compact = TRUE)
+        summary_table(pair_summary(), compact = TRUE)
       },
       striped = TRUE,
       spacing = "xs",

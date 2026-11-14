@@ -92,18 +92,6 @@ mod_plot_server <- function(id, data) {
   shiny::moduleServer(id, function(input, output, session) {
     ns <- session$ns
 
-    numeric_cols <- shiny::reactive({
-      raw <- data$raw()
-      if (is.null(raw)) {
-        return(character(0))
-      }
-      return(names(raw)[vapply(
-        raw,
-        is.numeric,
-        logical(1)
-      )])
-    })
-
     # ---- color-by / interaction selectors ----
 
     output$color_by_ui <- shiny::renderUI({
@@ -112,7 +100,7 @@ mod_plot_server <- function(id, data) {
       type <- input$type %||% "box"
       labs <- data$labels()
       all_cols <- names(raw)
-      nums <- numeric_cols()
+      nums <- data$numeric_cols()
       non_num <- setdiff(all_cols, nums)
 
       if (type == "interaction") {
@@ -256,7 +244,7 @@ mod_plot_server <- function(id, data) {
     # ---- histogram / scatter selectors ----
 
     output$hist_col_ui <- shiny::renderUI({
-      cols <- numeric_cols()
+      cols <- data$numeric_cols()
       choices <- c(
         "Grouped values" = "__tidy__",
         stats::setNames(cols, cols)
@@ -273,7 +261,7 @@ mod_plot_server <- function(id, data) {
       raw <- data$raw()
       shiny::req(raw)
       all_cols <- names(raw)
-      nums <- numeric_cols()
+      nums <- data$numeric_cols()
       non_num <- setdiff(all_cols, nums)
       candidates <- if (length(non_num) > 0) {
         non_num
@@ -293,7 +281,7 @@ mod_plot_server <- function(id, data) {
     })
 
     output$scatter_col_ui <- shiny::renderUI({
-      cols <- numeric_cols()
+      cols <- data$numeric_cols()
       if (length(cols) < 2) {
         return(shiny::p(
           class = "hint",
@@ -414,7 +402,7 @@ mod_plot_server <- function(id, data) {
         if (is.null(data$raw())) {
           return("Load data on the Data tab first.")
         }
-        if (length(numeric_cols()) < 2) {
+        if (length(data$numeric_cols()) < 2) {
           return(paste(
             "A scatterplot needs at least two",
             "numeric columns."

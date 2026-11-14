@@ -10,11 +10,11 @@ paths relative to `app/`:
 ```bash
 cd app
 Rscript ../tests/test_data.R      # 16 checks: data module
-Rscript ../tests/test_tests.R     # 28 checks: t-tests + one-way ANOVA
-Rscript ../tests/test_anova2.R    # 41 checks: two-way factorial ANOVA
+Rscript ../tests/test_tests.R     # 23 checks: t-tests + one-way ANOVA
+Rscript ../tests/test_anova2.R    # 35 checks: two-way factorial ANOVA
 ```
 
-All 85 should print `PASS`. Every statistic is compared against a
+All 74 should print `PASS`. Every statistic is compared against a
 direct `t.test()` / `aov()` / `TukeyHSD()` call rather than a stored
 expected value, so the tests stay honest if the app is refactored.
 

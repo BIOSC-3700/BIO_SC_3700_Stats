@@ -14,6 +14,10 @@ example_files <- c(
   "Intertidal algae — height X herbivores, factorial data" = "intertidal_algae.csv"
 )
 
+# Rows shown in the preview table. Enough to spot a bad header or a
+# stray unit without rendering a 10,000-row upload into the page.
+preview_rows <- 200
+
 
 mod_data_ui <- function(id) {
   ns <- shiny::NS(id)
@@ -79,7 +83,11 @@ mod_data_ui <- function(id) {
       bslib::card(
         min_height = "500px",
         bslib::card_header("Current Data"),
-        DT::DTOutput(ns("preview"))
+        shiny::div(
+          class = "table-scroll preview-scroll",
+          shiny::tableOutput(ns("preview"))
+        ),
+        shiny::uiOutput(ns("preview_note"))
       ),
       bslib::card(
         min_height = "500px",
@@ -284,6 +292,30 @@ mod_data_server <- function(id) {
       return("long")
     })
 
+    # Default picks for the long layout: the first numeric column holds
+    # the measurements and the first non-numeric column the groups.
+    # Shared by the sidebar and by tidy_result(), which runs once before
+    # the sidebar's inputs exist and must land on the same columns.
+    default_cols <- shiny::reactive({
+      data <- raw()
+      if (is.null(data)) {
+        return(list(value = NULL, group = NULL))
+      }
+      all_cols <- names(data)
+      nums <- numeric_cols()
+      value <- if (length(nums) > 0) nums[1] else all_cols[1]
+      non_numeric <- setdiff(all_cols, nums)
+      others <- setdiff(all_cols, value)
+      group <- if (length(non_numeric) > 0) {
+        non_numeric[1]
+      } else if (length(others) > 0) {
+        others[1]
+      } else {
+        all_cols[1]
+      }
+      return(list(value = value, group = group))
+    })
+
     output$layout_ui <- shiny::renderUI({
       data <- raw()
       if (is.null(data) || ncol(data) == 0) {
@@ -291,6 +323,7 @@ mod_data_server <- function(id) {
       }
       nums <- numeric_cols()
       all_cols <- names(data)
+      defaults <- default_cols()
       guess <- inferred_layout()
       layout_input <- shiny::radioButtons(
         ns("layout"),
@@ -308,26 +341,13 @@ mod_data_server <- function(id) {
           ns("value_col"),
           "Measurement column",
           choices = all_cols,
-          selected = if (length(nums) > 0) nums[1] else all_cols[1]
+          selected = defaults$value
         ),
         shiny::selectInput(
           ns("group_col"),
           "Group column",
           choices = all_cols,
-          selected = {
-            non_numeric <- setdiff(all_cols, nums)
-            others <- setdiff(
-              all_cols,
-              if (length(nums) > 0) nums[1] else character(0)
-            )
-            if (length(non_numeric) > 0) {
-              non_numeric[1]
-            } else if (length(others) > 0) {
-              others[1]
-            } else {
-              all_cols[1]
-            }
-          }
+          selected = defaults$group
         )
       )
       wide_ui <- shiny::conditionalPanel(
@@ -363,7 +383,13 @@ mod_data_server <- function(id) {
       layout <- input$layout %||% inferred_layout()
       problems <- character(0)
       if (identical(layout, "wide")) {
-        cols <- intersect(input$wide_cols %||% numeric_cols(), names(data))
+        cols <- input$wide_cols %||% numeric_cols()
+        if (!all(cols %in% names(data))) {
+          # Picks left over from the previous dataset. The sidebar is
+          # being rebuilt and the new picks arrive on the next flush, so
+          # show nothing rather than a warning about the wrong columns.
+          return(NULL)
+        }
         if (length(cols) < 1) {
           return(list(
             data = NULL,
@@ -385,10 +411,9 @@ mod_data_server <- function(id) {
           )
         )
       } else {
-        nums <- numeric_cols()
-        value_col <- input$value_col %||%
-          (if (length(nums) > 0) nums[1] else names(data)[1])
-        group_col <- input$group_col %||% names(data)[1]
+        defaults <- default_cols()
+        value_col <- input$value_col %||% defaults$value
+        group_col <- input$group_col %||% defaults$group
         if (!all(c(value_col, group_col) %in% names(data))) {
           return(NULL)
         }
@@ -523,14 +548,30 @@ mod_data_server <- function(id) {
       return(shiny::tagList(msgs))
     })
 
-    output$preview <- DT::renderDT({
+    # Every column is rendered as text so values appear exactly as they
+    # were read; renderTable would otherwise round numbers to 2 places.
+    output$preview <- shiny::renderTable(
+      {
+        data <- raw()
+        shiny::req(data)
+        shown <- utils::head(data, preview_rows)
+        shown[] <- lapply(shown, as.character)
+        shown
+      },
+      striped = TRUE,
+      spacing = "xs"
+    )
+
+    output$preview_note <- shiny::renderUI({
       data <- raw()
       shiny::req(data)
-      DT::datatable(
-        data,
-        rownames = FALSE,
-        options = list(pageLength = 8, scrollX = TRUE, dom = "tip")
-      )
+      n <- nrow(data)
+      txt <- if (n > preview_rows) {
+        glue::glue("Showing the first {preview_rows} of {n} rows.")
+      } else {
+        glue::glue("{n} row{ifelse(n == 1, '', 's')}.")
+      }
+      return(shiny::p(class = "hint", txt))
     })
 
     output$summary <- shiny::renderTable(
@@ -548,7 +589,8 @@ mod_data_server <- function(id) {
       raw = raw,
       tidy = tidy,
       info = tidy_result,
-      labels = labels
+      labels = labels,
+      numeric_cols = numeric_cols
     ))
   })
 }

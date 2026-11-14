@@ -1,6 +1,6 @@
 suppressMessages({
-  library(shiny); library(bslib); library(ggplot2); library(dplyr)
-  library(tibble); library(readr); library(readxl); library(DT)
+  library(shiny); library(bslib); library(ggplot2)
+  library(tibble); library(readr); library(readxl)
   library(glue); library(fs)
 })
 for (f in list.files("R", full.names = TRUE)) source(f)
@@ -9,11 +9,15 @@ near <- function(a, b) isTRUE(abs(a - b) < 1e-9)
 
 fac <- read_csv("data/intertidal_algae.csv",
                 show_col_types = FALSE)
+numeric_names <- function(raw_df) {
+  names(raw_df)[vapply(raw_df, is.numeric, logical(1))]
+}
 stub <- function(raw_df, vlab = "sqrt.area",
                  glab = "height") {
   list(raw = reactive(raw_df), tidy = reactive(NULL),
        info = reactive(NULL),
-       labels = reactive(list(value = vlab, group = glab)))
+       labels = reactive(list(value = vlab, group = glab)),
+       numeric_cols = reactive(numeric_names(raw_df)))
 }
 base_inputs <- function(session, ...) {
   defaults <- list(response = "sqrt.area", fac_a = "height",
@@ -134,10 +138,7 @@ testServer(mod_anova2_server,
   ok("empty cell blocked",
      any(grepl("empty", problems())))
 })
-one_per <- fac |>
-  group_by(height, herbivores) |>
-  slice(1) |>
-  ungroup()
+one_per <- fac[!duplicated(fac[c("height", "herbivores")]), ]
 testServer(mod_anova2_server,
            args = list(data = stub(one_per)), {
   base_inputs(session)

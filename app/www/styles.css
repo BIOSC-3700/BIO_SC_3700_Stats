@@ -202,6 +202,13 @@ table.table {
   width: 100%;
 }
 
+/* The Data tab preview: cap the height so a long upload scrolls inside
+   its card instead of stretching the page. */
+.preview-scroll {
+  max-height: 440px;
+  overflow-y: auto;
+}
+
 h6 {
   margin-top: 1rem;
   color: var(--bio-ink2);
